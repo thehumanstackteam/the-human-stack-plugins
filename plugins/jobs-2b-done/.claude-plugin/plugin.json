@@ -1,0 +1,8 @@
+{
+  "name": "jobs-2b-done",
+  "version": "3.0.0",
+  "description": "Jobs 2B Done — Run JTBD analysis on sales, coaching, and industry call transcripts. Pulls transcripts from Notion or pasted text, enriches with HubSpot connections, saves structured analysis to organized folders.",
+  "author": {
+    "name": "The Human Stack"
+  }
+}

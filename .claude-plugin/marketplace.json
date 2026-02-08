@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "the-human-stack",
+  "description": "The Human Stack plugins for JTBD analysis, sales, and nonprofit technology consulting workflows",
+  "owner": {
+    "name": "The Human Stack",
+    "email": "tim@thehumanstack.com"
+  },
+  "plugins": [
+    {
+      "name": "jobs-2b-done",
+      "description": "Jobs 2B Done — Run JTBD analysis on sales, coaching, and industry call transcripts. Pulls transcripts from Notion or pasted text, enriches with HubSpot connections, saves structured analysis to company folders.",
+      "version": "2.0.0",
+      "author": {
+        "name": "The Human Stack"
+      },
+      "source": "./plugins/jobs-2b-done",
+      "category": "productivity"
+    }
+  ]
+}
