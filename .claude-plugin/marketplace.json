@@ -16,6 +16,16 @@
       },
       "source": "./plugins/jobs-2b-done",
       "category": "productivity"
+    },
+    {
+      "name": "architect",
+      "description": "Three-layer AI context framework. Bootstraps docs/architect/ with Product, Project, and Task layers. Auto-commits on plan approval and nudges feature-dev for implementation.",
+      "version": "2.0.0",
+      "author": {
+        "name": "The Human Stack"
+      },
+      "source": "./plugins/architect",
+      "category": "productivity"
     }
   ]
 }
