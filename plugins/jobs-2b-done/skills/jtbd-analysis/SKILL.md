@@ -69,6 +69,26 @@ Jobs To Be Done/
 - Intensity = importance
 - Context matters (prospect vs. 90-day client)
 
+## Execution Strategy
+
+**Write files directly.** When performing analysis, write the output file directly to the target path. Do not generate content in memory and write it separately -- that forces regenerating thousands of tokens.
+
+**If using a subagent**, pass the target file path in the prompt and instruct the subagent to write the file itself using the Write tool. The subagent has access to Write. Never have a subagent return content for the parent to re-write.
+
+**Do not use task tracking** (TaskCreate/TaskUpdate) for this workflow. It adds overhead with no value.
+
+## Multiple Transcripts
+
+When given multiple transcript files in one invocation:
+1. Process them **sequentially**, one at a time
+2. Complete the FULL workflow (analyze, build connections, save) for each file before starting the next
+3. Do NOT use task tracking or parallel processing
+4. Share HubSpot lookups across files if they are for the same company (avoid redundant searches)
+
+## Binary Transcript Files (.docx, .pdf)
+
+If the user provides .docx files, convert them to text using `textutil -convert txt -stdout "<path>"` (macOS) before processing. For PDFs, use the Read tool with the `pages` parameter.
+
 ## Enrichment Mode
 
 When asked to "update connections" on existing files:

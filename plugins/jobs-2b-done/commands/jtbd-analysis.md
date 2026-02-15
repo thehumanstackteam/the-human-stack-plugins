@@ -125,7 +125,7 @@ Examples:
 
 **Save to**: `Jobs To Be Done/[Folder]/Calls & Meetings/[Company Name]/[filename].md`
 
-**Always show the user the completed analysis before saving** so they can review.
+**Write the file directly** as you generate the analysis. Do not hold content in memory and write it separately -- that forces regenerating thousands of tokens. If using a subagent, pass the target file path and instruct the subagent to write the file itself using the Write tool. Never have a subagent return content for the parent to re-write.
 
 ### 6. Enrich Existing Files (Optional)
 
@@ -139,6 +139,18 @@ If user asks to update connections on existing files, or says "update all connec
    - Run ~~CRM lookups (Step 4)
    - Search ~~knowledge base Meeting Transcripts database for matching meetings by date/company
    - Update ONLY the `[Add link]` placeholder fields — never overwrite existing valid links
+
+## Multiple Transcripts
+
+When given multiple transcript files in one invocation:
+1. Process them **sequentially**, one at a time
+2. Complete the FULL workflow (acquire, identify, analyze, connect, save) for each file before starting the next
+3. Do NOT use task tracking (TaskCreate/TaskUpdate) -- it adds overhead with no value
+4. Share HubSpot lookups across files if they are for the same company (avoid redundant searches)
+
+## Binary Transcript Files (.docx, .pdf)
+
+If the user provides .docx files, convert them to text using `textutil -convert txt -stdout "<path>"` (macOS) before processing. For PDFs, use the Read tool with the `pages` parameter.
 
 ## Important Notes
 
