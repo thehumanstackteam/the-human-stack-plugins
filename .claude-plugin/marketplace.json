@@ -9,11 +9,9 @@
   "plugins": [
     {
       "name": "jobs-2b-done",
-      "description": "Jobs 2B Done — Run JTBD analysis on sales, coaching, and industry call transcripts. Pulls transcripts from Notion or pasted text, enriches with HubSpot connections, saves structured analysis to company folders.",
-      "version": "2.0.0",
-      "author": {
-        "name": "The Human Stack"
-      },
+      "description": "Jobs 2B Done -- Run JTBD analysis on sales, coaching, and industry call transcripts. Pulls transcripts from Notion or pasted text, enriches with HubSpot connections, saves structured analysis to company folders.",
+      "version": "3.0.0",
+      "author": { "name": "The Human Stack" },
       "source": "./plugins/jobs-2b-done",
       "category": "productivity"
     },
@@ -21,10 +19,96 @@
       "name": "architect",
       "description": "Three-layer AI context framework. Bootstraps docs/architect/ with Product, Project, and Task layers. Auto-commits on plan approval and nudges feature-dev for implementation.",
       "version": "2.0.0",
-      "author": {
-        "name": "The Human Stack"
-      },
+      "author": { "name": "The Human Stack" },
       "source": "./plugins/architect",
+      "category": "productivity"
+    },
+    {
+      "name": "customer-support",
+      "description": "Triage tickets, draft responses, escalate issues, and build your knowledge base. Research customer context and turn resolved issues into self-service content.",
+      "version": "1.0.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/customer-support",
+      "category": "productivity"
+    },
+    {
+      "name": "data",
+      "description": "Write SQL, explore datasets, and generate insights faster. Build visualizations and dashboards, and turn raw data into clear stories for stakeholders.",
+      "version": "1.0.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/data",
+      "category": "productivity"
+    },
+    {
+      "name": "enterprise-search",
+      "description": "Search across all of your company's tools in one place. Find anything across email, chat, documents, and wikis without switching between apps.",
+      "version": "1.0.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/enterprise-search",
+      "category": "productivity"
+    },
+    {
+      "name": "finance",
+      "description": "Streamline finance and accounting workflows, from journal entries and reconciliation to financial statements and variance analysis.",
+      "version": "1.0.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/finance",
+      "category": "productivity"
+    },
+    {
+      "name": "legal",
+      "description": "Speed up contract review, NDA triage, and compliance workflows for in-house legal teams. Draft legal briefs, organize precedent research, and manage institutional knowledge.",
+      "version": "1.0.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/legal",
+      "category": "productivity"
+    },
+    {
+      "name": "marketing",
+      "description": "Create content, plan campaigns, and analyze performance across marketing channels. Maintain brand voice consistency, track competitors, and report on what's working.",
+      "version": "1.0.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/marketing",
+      "category": "productivity"
+    },
+    {
+      "name": "product-management",
+      "description": "Write feature specs, plan roadmaps, and synthesize user research faster. Keep stakeholders updated and stay ahead of the competitive landscape.",
+      "version": "1.0.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/product-management",
+      "category": "productivity"
+    },
+    {
+      "name": "productivity",
+      "description": "Manage tasks, plan your day, and build up memory of important context about your work. Syncs with your calendar, email, and chat to keep everything organized.",
+      "version": "1.0.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/productivity",
+      "category": "productivity"
+    },
+    {
+      "name": "sales",
+      "description": "Prospect, craft outreach, and build deal strategy faster. Prep for calls, manage your pipeline, and write personalized messaging that moves deals forward.",
+      "version": "1.0.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/sales",
+      "category": "productivity"
+    },
+    {
+      "name": "instructional-designer",
+      "description": "Design, audit, and rehearse training sessions. Timing checks, engagement checks, survey generation, slide review, dry-run coaching, and story harvesting.",
+      "version": "1.0.0",
+      "author": { "name": "The Human Stack" },
+      "source": "./plugins/instructional-designer",
+      "category": "productivity"
+    },
+    {
+      "name": "cowork-plugin-management",
+      "description": "Create, customize, and manage plugins tailored to your organization's tools and workflows. Configure MCP servers and adapt templates.",
+      "version": "0.2.1",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/cowork-plugin-management",
       "category": "productivity"
     }
   ]
