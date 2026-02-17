@@ -14,5 +14,6 @@ Plugins are **tool-agnostic** — they describe workflows in terms of categories
 | CRM                   | `~~CRM`                       | HubSpot          | Salesforce, Close, Copper  |
 | Knowledge base        | `~~knowledge base`            | Notion           | Confluence, Guru           |
 | Meeting transcription | `~~conversation intelligence` | Fireflies        | Gong, Fathom, Otter.ai    |
+| Enrichment            | `~~enrichment`                | Clay             | Apollo, Clearbit           |
 
 

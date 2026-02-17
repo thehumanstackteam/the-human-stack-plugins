@@ -9,6 +9,12 @@ argument-hint: "<company name, folder, date range, 'all', or specific filter>"
 
 Aggregate and synthesize insights across multiple JTBD call analyses stored in `Jobs To Be Done/`. Surfaces patterns invisible in any single call.
 
+## Key References
+
+- **JTBD Analyses Notion DB**: `2f218faa725b41828194e8fc0f93453b`
+- **JTBD Analyses Data Source**: `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`
+- **Synthesis Prompt**: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Synthesis-Prompt.md`
+
 ## Workspace Structure
 
 Analyses are organized into top-level folders:
@@ -45,8 +51,18 @@ Ask the user what they want to synthesize. Options:
 - **Engagement stage** — Filter by stage (Pre-sale, Discovery, Active Client, Alumni)
 - **Custom** — Any combination of filters
 
-### 2. Load Source Files
+### 2. Load Source Data
 
+**Primary source: JTBD Analyses Notion DB**
+
+Use the Notion database as the index to identify which analyses to include:
+1. Search the JTBD Analyses DB (`collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`) using the user's filter criteria (Engagement Stage, Organization, Sector, etc.)
+2. For each matching record, read the page content for the full analysis
+3. Use the structured properties (Themes, Frameworks Applied, Persona Label, etc.) for cross-cutting aggregation
+
+**Fallback: Read .md files directly**
+
+If the Notion DB is not yet backfilled or records are missing:
 1. **Read the synthesis prompt** from: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Synthesis-Prompt.md`
 2. List all `Calls & Meetings/` subdirectories across folders
 3. Apply the user's filter (folder, company, date, stage, or all)
@@ -54,9 +70,9 @@ Ask the user what they want to synthesize. Options:
 5. Also load any existing synthesis reports from `Synthesis/` folders for context on established findings
 
 **Extract from each analysis:**
-- Company name (from folder)
-- Call date (from filename)
-- Parent folder (from path)
+- Company name (from folder or Organization property)
+- Call date (from filename or record)
+- Parent folder (from path or File Path property)
 - Participant names and roles
 - Primary JTBD
 - Functional / Emotional / Social jobs
@@ -230,3 +246,4 @@ If ~~CRM is connected, enrich the synthesis:
 - Synthesis, not summary — identify what's invisible at the individual call level.
 - When quoting across calls, always cite which call/company the quote came from.
 - This synthesis is most valuable with 3+ calls. With fewer, flag conclusions as preliminary.
+- The Notion DB properties (Themes, Frameworks, Engagement Stage, etc.) enable faster filtering than reading every .md file. Use DB queries first, then read page content for details.

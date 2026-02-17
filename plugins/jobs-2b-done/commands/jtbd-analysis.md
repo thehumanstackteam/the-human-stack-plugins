@@ -1,5 +1,5 @@
 ---
-description: Run Jobs-to-be-Done analysis on a call transcript from pasted text, ~~conversation intelligence link, or ~~knowledge base meeting transcript. Saves to company folder with ~~CRM connections.
+description: Run Jobs-to-be-Done analysis on a call transcript from pasted text, ~~conversation intelligence link, or ~~knowledge base meeting transcript. Saves to company folder with ~~CRM connections and populates the JTBD Analyses Notion database.
 argument-hint: "<transcript text, Notion link, or Fathom/app URL>"
 ---
 
@@ -7,9 +7,17 @@ argument-hint: "<transcript text, Notion link, or Fathom/app URL>"
 
 > If you see unfamiliar placeholders or need to check which tools are connected, see [CONNECTORS.md](../CONNECTORS.md).
 
-Analyze a call transcript through Tim Lockie's Jobs-to-be-Done framework. Produces a structured analysis file saved to a company folder under `Jobs To Be Done/`.
+Analyze a call transcript through Tim Lockie's Jobs-to-be-Done framework. Produces a structured analysis file saved to a company folder under `Jobs To Be Done/`, then creates a corresponding record in the **JTBD Analyses** Notion database.
 
 **Related commands:** Use after sales calls (pairs with `sales:call-summary`), for product research synthesis (pairs with `product-management:synthesize-research`), and for productivity tracking (pairs with `productivity:update`).
+
+## Key References
+
+- **JTBD Analyses Notion DB**: `2f218faa725b41828194e8fc0f93453b`
+- **JTBD Analyses Data Source**: `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`
+- **Meeting Transcripts DB**: `8368d3474cac4e71bf945934fce957f7`, collection `669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5`
+- **HubSpot Portal**: `22283601`
+- **Database Schema**: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Database-Schema.md`
 
 ## Workspace Structure
 
@@ -48,7 +56,7 @@ Accept transcript from ONE of these sources. If unclear, ask which:
 - A company/meeting name to search → Use `notion-search` tool with `data_source_url: "collection://669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5"` to find the transcript in the Meeting Transcripts database (ID: `8368d3474cac4e71bf945934fce957f7`). If multiple matches, present options and ask user to pick.
 
 **Extract from ~~knowledge base transcripts:**
-- Notion page ID/URL (for Connections section)
+- Notion page ID/URL (for Connections section and Meeting Transcript link)
 - `Fathom ID` property (if present, construct Fathom video link)
 - `Fathom Invitees` / `Attendees 1` properties (participant names)
 - Page title and created date (for file naming)
@@ -99,6 +107,7 @@ Prepend a `## CONNECTIONS` section at the top of the analysis. Populate each fie
 **HubSpot Account**: [~~CRM company record link]
 **HubSpot Contacts**: [~~CRM linked contact names]
 **HubSpot Deal**: [~~CRM deal link or "[Add link]"]
+**Clay URL**: [Clay enrichment URL if available, or "[Add link]"]
 ```
 
 **~~CRM lookup procedure:**
@@ -125,9 +134,71 @@ Examples:
 
 **Save to**: `Jobs To Be Done/[Folder]/Calls & Meetings/[Company Name]/[filename].md`
 
-**Write the file directly** as you generate the analysis. Do not hold content in memory and write it separately -- that forces regenerating thousands of tokens. If using a subagent, pass the target file path and instruct the subagent to write the file itself using the Write tool. Never have a subagent return content for the parent to re-write.
+**Always show the user the completed analysis before saving** so they can review.
 
-### 6. Enrich Existing Files (Optional)
+### 6. Populate JTBD Analyses Notion Database
+
+After saving the .md file, create a page in the **JTBD Analyses** database. This is the structured, queryable layer that links back to the full analysis and the source transcript.
+
+**Database**: `2f218faa725b41828194e8fc0f93453b`
+**Data source**: `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`
+
+Use `notion-create-pages` with `parent: { data_source_id: "fbf274fd-5cf0-4afe-9eaf-cb511cae6b94" }`.
+
+**Property mapping** — extract these from the completed analysis:
+
+| Property | Source | Notes |
+|----------|--------|-------|
+| Name | File title (e.g., "2025-07-02 - Haley MacDonald, Imagine Canada") | Title property |
+| Organization | Company name from Step 2 | Text |
+| File Path | Full path where .md was saved | Text |
+| Primary JTBD | From `### PRIMARY JTBD` one-sentence synthesis | Text |
+| Engagement Stage | From `CONTEXT METADATA` → Engagement Stage | Select |
+| Product Context | From `CONTEXT METADATA` → Product | Multi-select (array) |
+| Pillar Focus | From `CONTEXT METADATA` → Pillar | Multi-select (array) |
+| Best-Fit Offering | From `### PRODUCT/OFFERING IMPLICATIONS` → Best-Fit Offering | Select |
+| Urgency Level | From `### SWITCH TRIGGER` → Urgency Level | Select |
+| Confidence Score | From `### DETAILED JTBD ANALYSIS` → Confidence Score | Select |
+| Speaker Role | From `CONTEXT METADATA` → Primary Speaker role | Select |
+| Speaker POV | From `CONTEXT METADATA` → Primary Speaker POV | Select |
+| Decision Authority | From `### AUDIENCE SEGMENT` → Decision Authority | Select |
+| Org Size | From `CONTEXT METADATA` → Org Size | Select |
+| Sector | From `CONTEXT METADATA` → Sector | Select |
+| Persona Label | From `### AUDIENCE SEGMENT` → Persona Label | Text |
+| Known Pattern | From `### PATTERN RECOGNITION` → Known Pattern | Text |
+| Emerging Pattern | From `### PATTERN RECOGNITION` → Emerging Pattern | Text |
+| Themes | From analysis themes — map to multi-select tags | Multi-select (array) |
+| Frameworks Applied | From `### IP & FRAMEWORK APPLICATION` → Best-Fit Framework(s) | Multi-select (array) |
+| Quick Summary | From `### QUICK SUMMARY` — concatenate the 5 summary lines | Text |
+| Meeting Transcript | Notion page URL of source transcript (from Step 1, Option C) | URL |
+| Fathom Recording | From CONNECTIONS section | URL |
+| HubSpot Account | From CONNECTIONS section | URL |
+| HubSpot Deal | From CONNECTIONS section | URL |
+| HubSpot Contacts | From CONNECTIONS section — formatted as "Name (link), Name (link)" | Text |
+| Clay URL | From CONNECTIONS section | URL |
+
+**Page content**: Paste the full analysis as the page body (same content saved in the .md file).
+
+**Multi-select values must match exactly.** Use only values that exist in the database schema. If a value from the analysis doesn't match an existing option, omit it rather than creating a new one (unless the user explicitly adds it).
+
+**Themes mapping** — scan the analysis for these theme indicators and tag accordingly:
+- `vendor-dependency` — mentions of consultant/vendor lock-in, outsourced knowledge
+- `tech-trauma` — past failed implementations, burned by technology
+- `lone-wolf` — single person carrying all tech responsibility
+- `permission-to-lead` — seeking validation to make decisions
+- `AI-anxiety` — fear or uncertainty about AI adoption
+- `change-saturation` — too many changes happening at once
+- `bright-shiny-object` — chasing new tools without strategy
+- `training-gap` — staff lack skills to use systems
+- `trust-deficit` — low trust in systems, data, or leadership
+- `silo` — disconnected departments, data, or systems
+- `accidental-techie` — non-technical staff managing technology
+- `governance-vacuum` — no decision framework for technology
+- `channel-partner` — intermediary/partner relationship
+- `strategy-execution-gap` — good strategy but poor implementation
+- `lone-ranger-blocker` — individual blocking organizational progress
+
+### 7. Enrich Existing Files (Optional)
 
 If user asks to update connections on existing files, or says "update all connections":
 
@@ -139,23 +210,13 @@ If user asks to update connections on existing files, or says "update all connec
    - Run ~~CRM lookups (Step 4)
    - Search ~~knowledge base Meeting Transcripts database for matching meetings by date/company
    - Update ONLY the `[Add link]` placeholder fields — never overwrite existing valid links
-
-## Multiple Transcripts
-
-When given multiple transcript files in one invocation:
-1. Process them **sequentially**, one at a time
-2. Complete the FULL workflow (acquire, identify, analyze, connect, save) for each file before starting the next
-3. Do NOT use task tracking (TaskCreate/TaskUpdate) -- it adds overhead with no value
-4. Share HubSpot lookups across files if they are for the same company (avoid redundant searches)
-
-## Binary Transcript Files (.docx, .pdf)
-
-If the user provides .docx files, convert them to text using `textutil -convert txt -stdout "<path>"` (macOS) before processing. For PDFs, use the Read tool with the `pages` parameter.
+4. Also check if a corresponding JTBD Analyses DB record exists. If not, create one (Step 6).
 
 ## Important Notes
 
 - The `JTBD-Analysis-Prompt.md` in `Jobs 2B Done - Plugin & Skills/` is the single source of truth for methodology. Always read it fresh — it gets updated.
 - Fuzzy match company folders aggressively. Only create new folders for clearly different organizations.
 - ~~CRM searches may return multiple results. Use the most likely match. If ambiguous, ask.
-- If the transcript source was ~~knowledge base, always include the page link in connections.
+- If the transcript source was ~~knowledge base, always include the page link in connections AND in the Meeting Transcript property.
 - After saving, mention related next steps: run `jtbd-synthesis` to update cross-call patterns, log concepts with `thought-leadership-librarian`, or prep for next call with `sales:call-prep`.
+- The Notion DB record is the queryable index. The .md file is the full human-readable analysis. Both get created every time.

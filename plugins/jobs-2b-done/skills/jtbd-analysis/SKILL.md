@@ -7,6 +7,7 @@ Run Jobs-to-be-Done analysis on call transcripts using Tim Lockie's structured f
 - **Analysis Prompt**: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Analysis-Prompt.md`
 - **Synthesis Prompt**: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Synthesis-Prompt.md`
 - **Database Schema**: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Database-Schema.md`
+- **JTBD Analyses Notion DB**: ID `2f218faa725b41828194e8fc0f93453b`, data source `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`
 - **Notion Meeting Transcripts DB**: ID `8368d3474cac4e71bf945934fce957f7`, collection `669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5`
 - **HubSpot Portal**: `22283601`
 
@@ -47,7 +48,12 @@ Jobs To Be Done/
    - HubSpot Account (search ~~CRM companies, portal `22283601`, record type `0-2`)
    - HubSpot Contacts (search ~~CRM contacts, record type `0-1`)
    - HubSpot Deal (search ~~CRM deals, record type `0-3`)
+   - Clay URL (if available)
 7. **Save** to `Jobs To Be Done/[Folder]/Calls & Meetings/[Company]/[filename].md`
+8. **Populate JTBD Analyses DB** — create a page in the Notion database (data source `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`) with:
+   - All metadata properties extracted from the analysis (see command file Step 6 for full mapping)
+   - Full analysis pasted as page content
+   - Links to Meeting Transcript, Fathom, HubSpot, Clay from CONNECTIONS section
 
 ## File Naming
 
@@ -69,25 +75,18 @@ Jobs To Be Done/
 - Intensity = importance
 - Context matters (prospect vs. 90-day client)
 
-## Execution Strategy
+## Notion DB Population
 
-**Write files directly.** When performing analysis, write the output file directly to the target path. Do not generate content in memory and write it separately -- that forces regenerating thousands of tokens.
+After saving the .md file, always create a JTBD Analyses record. The database serves as the queryable, filterable index across all analyses. The .md file remains the authoritative full-text source.
 
-**If using a subagent**, pass the target file path in the prompt and instruct the subagent to write the file itself using the Write tool. The subagent has access to Write. Never have a subagent return content for the parent to re-write.
+**Use `notion-create-pages`** with:
+```
+parent: { data_source_id: "fbf274fd-5cf0-4afe-9eaf-cb511cae6b94" }
+```
 
-**Do not use task tracking** (TaskCreate/TaskUpdate) for this workflow. It adds overhead with no value.
+**Property mapping**: See `commands/jtbd-analysis.md` Step 6 for the complete field-by-field mapping table.
 
-## Multiple Transcripts
-
-When given multiple transcript files in one invocation:
-1. Process them **sequentially**, one at a time
-2. Complete the FULL workflow (analyze, build connections, save) for each file before starting the next
-3. Do NOT use task tracking or parallel processing
-4. Share HubSpot lookups across files if they are for the same company (avoid redundant searches)
-
-## Binary Transcript Files (.docx, .pdf)
-
-If the user provides .docx files, convert them to text using `textutil -convert txt -stdout "<path>"` (macOS) before processing. For PDFs, use the Read tool with the `pages` parameter.
+**Multi-select values must match exactly** — only use values that exist in the database schema. Omit rather than create unknown options.
 
 ## Enrichment Mode
 
@@ -96,3 +95,4 @@ When asked to "update connections" on existing files:
 2. Find files with missing or `[Add link]` connections
 3. Run ~~CRM lookups and ~~knowledge base searches
 4. Update only placeholder fields — never overwrite existing links
+5. Check if a corresponding JTBD Analyses DB record exists — if not, create one
