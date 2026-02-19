@@ -69,11 +69,14 @@ Load reference files:
 
 ## The 7-Step Process
 
-This is the actual methodology for writing the sentence. Follow in order.
+This is the process that got us from template fill-in to funder-ready sentence.
+Follow in order.
 
-### Step 1: Gather the 6 Raw Ingredients
+### Step 1: Start with Simon's 6 characteristics
 
-Read essentials-review.md and extract content for each characteristic:
+AI tech, personnel, data, pre-AI workflow, post-AI workflow, impact (quant +
+qual). These are the raw ingredients. Read essentials-review.md and pull the
+content for each one:
 
 | Characteristic | Primary Source Fields |
 |---------------|---------------------|
@@ -84,64 +87,51 @@ Read essentials-review.md and extract content for each characteristic:
 | Post-AI Workflow | C4P1F2, C3P2T1F2, C3P3T1F2 |
 | Impact | C4P2 fields (all), value calculation tables, Coaching Notes |
 
-### Step 2: Read Through the Funder Lens
+### Step 2: Identify the meta-task
 
-Ask "what can Simon report" -- NOT "how far along is the client."
+Not "fill the template" but "give Simon a sentence he can drop into a funder
+report without editing." This changes what "good" looks like. A template fill-in
+checks boxes. A funder-ready sentence makes someone want to keep reading. If what
+you're writing reads like a form, you've missed the meta-task.
 
-- Adoption that spread to other staff is reportable
-- An unfinished exploration is still reportable as "exploring"
-- Nothing needs to be complete to be funder-ready
-- Don't undersell. Don't assume the client's story is weaker than it is
+### Step 3: Read the evaluations through the funder lens
 
-### Step 3: Count the Actual Steps
+Ask "what can Simon report" not "how far along is the client." Adoption that
+spread to other staff is reportable. An unfinished Salesforce exploration is
+still reportable as "exploring." Nothing needs to be complete. A client at
+session 4 with one real breakthrough and a lot of exploration has a reportable
+story -- the story is just about adoption and capacity-building, not a completed
+system transformation. That's legitimate. Don't undersell it.
 
-Go back to the evaluation files if needed. Count the before-workflow steps.
-Count the after-workflow steps. Someone counted "10-step manual intake" for the
-JotForm example -- that wasn't magic, someone enumerated the workflow.
+### Step 4: Extract the reportable specifics
 
-If the essentials-review says "manual process" without step counts, dig into
-the evaluations. The steps are there.
+Named tools, titles (not names -- "Deputy Director of Operations" not "Sarah"),
+volume (newsletters, articles, cities, clients served), time recovered
+(annualized from the L/M/H proxy Med scenario), qualitative shift (in plain
+language -- what changed about how people work, not how people feel).
 
-### Step 4: Extract the Reportable Specifics
+### Step 5: Don't assume the client's story is weaker than it is
 
-Pull out:
-- Named tools (not "AI tools")
-- Titles and roles (not names -- "Deputy Director of Operations" not "Sarah")
-- Volume numbers (newsletters, articles, cities, clients served)
-- Time recovered (annualized from the L/M/H proxy Med scenario)
-- Qualitative shift (in plain language -- what changed about how people work)
+Count the actual steps, name the actual numbers. The data is in the evaluations.
+Someone counted "10-step manual intake" for the JotForm example -- that wasn't
+magic, someone enumerated the workflow. If the essentials-review says "manual
+process" without step counts, go back to the evaluation files. The steps are
+there. Count them.
 
-### Step 5: Write It as Narrative Prose
+### Step 6: Write it as narrative prose
 
-Structure: lead with the people, then the tools, then the workflow change, then
-the impact.
+No bold template markers, no checklist feel, no consultant jargon. If it reads
+like a form, rewrite it until it reads like a case study. Two sentences if one
+gets too long. Lead with the people, then the tools, then the workflow change,
+then the impact. The structure should feel like narrative, not a checklist with
+bolding.
 
-Pattern that works:
-> "The [titles] at [org] have adopted [tools] for [process], replacing
-> [pre-AI workflow with step count] with [post-AI workflow with step count],
-> recovering [time/volume], and [qualitative impact]."
+### Step 7: Test it
 
-Rules:
-- No bold template markers
-- No consultant jargon
-- No field codes or stage numbers
-- Two sentences if one gets too long -- but aim for one
-- It must read like a case study opening, not a checklist
+Could Simon paste this into a report to a program officer with zero edits? If
+not, what's stopping him? Fix that specific thing.
 
-### Step 6: Test It
-
-Ask: could Simon paste this into a report to a program officer with zero edits?
-
-If not, what's stopping him? Fix that.
-
-Check:
-- Does it name specific tools? (not "AI")
-- Does it name roles? (not "staff")
-- Does it have a before/after contrast with numbers?
-- Does it sound like something happened, or like a plan was made?
-- Is there anything a funder would need explained?
-
-### Step 7: Write to File and Push
+### Write to File and Push
 
 Save to `{ARTIFACT_ROOT}/{folder_name}/4-summary/simon-summary.md`:
 
