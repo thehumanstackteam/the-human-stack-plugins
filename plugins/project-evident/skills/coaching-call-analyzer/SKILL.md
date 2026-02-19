@@ -10,41 +10,80 @@ description: >
 
 # Coaching Call Analyzer (Stage 1)
 
-Two-phase architecture: **Phase A** retrieves and filters coaching calls from Notion
-(lightweight, runs in the main agent). **Phase B** spawns one subagent per transcript
-for parallel analysis (each gets a fresh context window).
+Two-phase architecture running as **autonomous background subagents**:
 
-**Plugin version: 1.0.0**
+- **Phase A** (background orchestrator): Retrieves and filters coaching calls from
+  Notion, writes raw transcripts and manifest to disk, then spawns Phase B agents.
+- **Phase B** (parallel background agents): One per transcript, each with a fresh
+  context window for independent analysis.
+
+Both phases run in the background via `run_in_background: true`. The main conversation
+stays free for other work. Progress is tracked in `pipeline.log`.
+
+**Plugin version: 1.1.0**
 
 ## Prerequisites
 
 - Notion MCP connector for fetching coaching call pages.
 - Load these reference files BEFORE analysis:
-  - `references/org-mapping.md` — client page IDs, essentials page IDs, folder names
-  - `references/endpoint-map.md` — the 50 Notion field names (know what you're extracting for)
-  - `references/simon-criteria.md` — the 7 Essential Elements quality gate
+  - `references/org-mapping.md` -- client page IDs, essentials page IDs, folder names
+  - `references/endpoint-map.md` -- the 50 Notion field names (know what you're extracting for)
+  - `references/simon-criteria.md` -- the 7 Essential Elements quality gate
 
 ## Constants
 
 ```
 ARTIFACT_ROOT = ~/Dev/claude-cowork/Clients/Project Evident Updates
-PLUGIN_VERSION = 1.0.0
+PLUGIN_VERSION = 1.1.0
 ```
 
 ---
 
-# PHASE A: Retrieval & Enumeration (Main Agent)
+# PHASE A: Retrieval & Enumeration (Background Orchestrator)
 
-Phase A is lightweight — it fetches metadata, filters, writes raw transcripts
-to disk, and produces a manifest. It should NOT do any analysis.
+Phase A runs as a background subagent (`run_in_background: true`). It fetches
+metadata, filters, writes raw transcripts to disk, produces a manifest, and
+then spawns Phase B agents. It should NOT do any analysis itself.
+
+**Launch Pattern (from caller):**
+```
+Task(
+  subagent_type: "general-purpose",
+  description: "Stage 1 Phase A: {client} retrieval",
+  run_in_background: true,
+  prompt: "You are the Phase A orchestrator for the Project Evident call analyzer.
+    Your job is to retrieve coaching calls from Notion, filter them, write transcripts
+    and a manifest to disk, then spawn Phase B analysis agents.
+
+    Client: {Short Name}
+    Client Page ID: {client_page_id}
+    Essentials Page ID: {essentials_page_id}
+    Folder: {ARTIFACT_ROOT}/{folder_name}/
+
+    Follow the Phase A steps below (A0-A6), then execute Phase B (B0-B1).
+    Phase B agents should also run in background (run_in_background: true).
+
+    Read these reference files first:
+    - {skill_directory}/references/org-mapping.md
+    - {skill_directory}/references/endpoint-map.md
+    - {skill_directory}/references/simon-criteria.md
+
+    After Phase B agents are launched, write a PHASE_A_COMPLETE entry to pipeline.log
+    and return the manifest summary. Phase B results will arrive asynchronously."
+)
+```
+
+**The caller does NOT wait for Phase A to finish.** It launches the background
+agent and returns immediately. The user checks progress via `pipeline.log` or
+by reading the output files.
 
 ## Step A0: Resolve Client and Validate IDs
 
 1. Match the client name/shortname to org-mapping.md.
-2. Extract these three values — ALL are required:
-   - `client_page_id` — Clients DB Page ID
-   - `essentials_page_id` — Essentials DB Page ID
-   - `folder_name` — e.g., "ALAS Working Files"
+2. Extract these three values -- ALL are required:
+   - `client_page_id` -- Clients DB Page ID
+   - `essentials_page_id` -- Essentials DB Page ID
+   - `folder_name` -- e.g., "ALAS Working Files"
 
 3. **HALT if `client_page_id` or `essentials_page_id` is missing or empty.** Do not
    proceed. Report: "Cannot run Stage 1 for {client}: missing {which ID} in org-mapping.md."
@@ -59,7 +98,7 @@ to disk, and produces a manifest. It should NOT do any analysis.
 ## Step A1: Fetch Client Page and Enumerate Coaching Calls
 
 1. Fetch the client org page using `client_page_id` via Notion MCP `fetch` tool.
-2. Extract the **Coaching Calls** relation → list of coaching call page IDs.
+2. Extract the **Coaching Calls** relation -> list of coaching call page IDs.
 3. Log: "Found {N} pages in Coaching Calls relation."
 
 ## Step A2: Fetch and Filter Each Coaching Call Page
@@ -70,22 +109,22 @@ For each page ID in the Coaching Calls relation, fetch the page via Notion `fetc
 
 ### Filter 1: Page Type
 Read the `Page Type` property.
-- `"Cancellation"` → **SKIP**, log as cancelled
-- `"THS Cancelled"` → **SKIP**, log as THS-side cancellation
-- `"Client Page"` → **SKIP**, this is the org page itself (shouldn't be here but sometimes is)
-- `"Coaching Call"` → **CONTINUE to Filter 2**
-- Any other value → **CONTINUE with caution**, log the unexpected type
+- `"Cancellation"` -> **SKIP**, log as cancelled
+- `"THS Cancelled"` -> **SKIP**, log as THS-side cancellation
+- `"Client Page"` -> **SKIP**, this is the org page itself (shouldn't be here but sometimes is)
+- `"Coaching Call"` -> **CONTINUE to Filter 2**
+- Any other value -> **CONTINUE with caution**, log the unexpected type
 
 ### Filter 2: Transcript Content
-Read the `Transcript` property (NOT the page body — the transcript is a property field).
-- Property missing, empty, or "No transcript available" → **SKIP**, log: "No transcript content"
-- Content is under 500 characters → **Check Filter 3** (might be a cancellation note)
-- Content is 500+ characters → **CONTINUE to Filter 3**
+Read the `Transcript` property (NOT the page body -- the transcript is a property field).
+- Property missing, empty, or "No transcript available" -> **SKIP**, log: "No transcript content"
+- Content is under 500 characters -> **Check Filter 3** (might be a cancellation note)
+- Content is 500+ characters -> **CONTINUE to Filter 3**
 
 ### Filter 3: Not-A-Call Check
 Read the `Call Evaluation` property if it exists.
-- Starts with "NOT A COACHING CALL" → **SKIP**, log: "Marked as not a coaching call"
-- Otherwise → **PASS** — this is a real coaching call with a transcript
+- Starts with "NOT A COACHING CALL" -> **SKIP**, log: "Marked as not a coaching call"
+- Otherwise -> **PASS** -- this is a real coaching call with a transcript
 
 **For pages that pass all filters:**
 - Extract: date (from page properties or content), attendees (if visible), title
@@ -111,11 +150,11 @@ transcript_page_id: {Notion page ID of this coaching call}
 session: {N}
 date: {YYYY-MM-DD}
 title: {page title from Notion}
-plugin_version: 1.0.0
+plugin_version: 1.1.0
 created_at: {ISO 8601 timestamp}
 ---
 
-{Raw transcript content from Notion — verbatim, no analysis}
+{Raw transcript content from Notion -- verbatim, no analysis}
 ```
 
 **NOTE:** The raw transcript content comes from the `Transcript` property on the
@@ -136,7 +175,7 @@ After writing ALL transcripts, write a manifest that Phase B will use to spawn a
   "client_page_id": "{from org-mapping}",
   "essentials_page_id": "{from org-mapping}",
   "folder_name": "{folder_name}",
-  "plugin_version": "1.0.0",
+  "plugin_version": "1.1.0",
   "created_at": "{ISO 8601 timestamp}",
   "total_pages_in_relation": {N},
   "filtered_out": {count},
@@ -165,7 +204,7 @@ After writing ALL transcripts, write a manifest that Phase B will use to spawn a
 
 Append to pipeline.log:
 ```
-[{ISO 8601 timestamp}] [v1.0.0] [stage-1:phase-a:retrieval] [{Short Name}]
+[{ISO 8601 timestamp}] [v1.1.0] [stage-1:phase-a:retrieval] [{Short Name}]
   Status: SUCCESS
   Total pages in relation: {N}
   Filtered out: {count} ({reasons})
@@ -176,20 +215,21 @@ Append to pipeline.log:
 
 ---
 
-# PHASE B: Parallel Analysis (Subagents)
+# PHASE B: Parallel Analysis (Background Subagents)
 
-Phase B spawns one Task subagent per transcript. Each subagent gets its own
-context window — this is why the architecture works for clients with many calls.
+Phase B spawns one background Task subagent per transcript (`run_in_background: true`).
+Each subagent gets its own context window -- this is why the architecture works for
+clients with many calls. All Phase B agents run concurrently in the background.
 
 ## Step B0: Read Manifest and Prepare Subagent Launches
 
 1. Read `1-transcripts/manifest.json`.
 2. For each entry in `calls_to_analyze`, prepare a subagent prompt.
 
-## Step B1: Spawn Parallel Subagents
+## Step B1: Spawn Parallel Background Subagents
 
-**CRITICAL: Launch ALL subagents in a SINGLE message using multiple Task tool calls.**
-This runs them in parallel, not sequentially.
+**CRITICAL: Launch ALL subagents in a SINGLE message using multiple Task tool calls,
+each with `run_in_background: true`.** This runs them concurrently in the background.
 
 For each call in the manifest, spawn:
 
@@ -197,6 +237,7 @@ For each call in the manifest, spawn:
 Task(
   subagent_type: "general-purpose",
   description: "Analyze {client} call {N}",
+  run_in_background: true,
   prompt: "You are analyzing a single coaching call transcript for a Project Evident
     coaching client. Your job is to perform semantic topic clustering, speaker attribution,
     component-level evaluation, and Essential Elements coverage tracking.
@@ -231,14 +272,14 @@ Task(
     ### Topic Clustering
     Break the transcript into Topic Clusters:
     - Unified semantic theme, natural conversation boundaries
-    - 300–2000 words typical, may overlap if genuinely multi-topic
+    - 300-2000 words typical, may overlap if genuinely multi-topic
 
     For each cluster:
-    - Number, descriptive name (5–10 words), time range, ~word count
+    - Number, descriptive name (5-10 words), time range, ~word count
     - Coherence (High / Medium / Low)
 
     Embedding rule: If a cluster is under ~1000 words, include the FULL cluster
-    text in the evaluation. Don't summarize small clusters — Stage 2 needs the
+    text in the evaluation. Don't summarize small clusters -- Stage 2 needs the
     material. For clusters over ~1000 words, write a rich summary that preserves
     ALL specifics: tool names, people names, data types, numbers, process steps.
 
@@ -255,15 +296,15 @@ Task(
       NOTE: Coach statements = context, not evidence of client adoption.
 
     Weight rules:
-    1. Numbers calculated together in session → strongest
-    2. Client action taken between sessions → strong
-    3. Client returning to topic across sessions → strong
-    4. Client describing in own words → moderate
-    5. Coach introduced, client used in own words later → moderate
-    6. Client passing comment once → weak
-    7. Coach introduced, client nodded → NOT evidence
+    1. Numbers calculated together in session -> strongest
+    2. Client action taken between sessions -> strong
+    3. Client returning to topic across sessions -> strong
+    4. Client describing in own words -> moderate
+    5. Coach introduced, client used in own words later -> moderate
+    6. Client passing comment once -> weak
+    7. Coach introduced, client nodded -> NOT evidence
 
-    Value discovery signals — scan for ALL of these:
+    Value discovery signals -- scan for ALL of these:
     - Direct time questions: \"How long?\" / \"How many hours?\"
     - Frequency multipliers: \"How often?\" / \"Is that weekly?\"
     - Cost comparisons: \"What do you pay?\" / \"How much is the consultant?\"
@@ -315,7 +356,7 @@ Task(
     session: {N}
     date: {date}
     call_type: {Rapport|Exploration|Traction|Wrap}
-    plugin_version: 1.0.0
+    plugin_version: 1.1.0
     created_at: {ISO 8601 timestamp}
     source_transcript: ../1-transcripts/call-{N}-transcript.md
     ---
@@ -334,13 +375,13 @@ Task(
     {Full text if <1000 words, OR rich summary preserving all specifics}
 
     Component Coverage:
-      C1P1 Pain Point: {Yes/No} ({confidence}%) — {1-line what's there}
-      C1P2 Solution: {Yes/No} ({confidence}%) — {1-line what's there}
-      C2 Policy: {Yes/No} ({confidence}%) — {1-line what's there}
-      C3P1 Foundation: {Yes/No} ({confidence}%) — {1-line what's there}
-      C3P2 Testing: {Yes/No} ({confidence}%) — {1-line what's there}
-      C3P3 Rollout: {Yes/No} ({confidence}%) — {1-line what's there}
-      C4 Progress: {Yes/No} ({confidence}%) — {1-line what's there}
+      C1P1 Pain Point: {Yes/No} ({confidence}%) -- {1-line what's there}
+      C1P2 Solution: {Yes/No} ({confidence}%) -- {1-line what's there}
+      C2 Policy: {Yes/No} ({confidence}%) -- {1-line what's there}
+      C3P1 Foundation: {Yes/No} ({confidence}%) -- {1-line what's there}
+      C3P2 Testing: {Yes/No} ({confidence}%) -- {1-line what's there}
+      C3P3 Rollout: {Yes/No} ({confidence}%) -- {1-line what's there}
+      C4 Progress: {Yes/No} ({confidence}%) -- {1-line what's there}
 
     Essential Elements addressed: {list with actual content found}
 
@@ -363,19 +404,19 @@ Task(
     ## Essential Elements Scorecard
 
     Element              | Status      | Content Found
-    AI Tech              | ✓ Specific  | {actual content}
-    Personnel            | ✓ Named     | {actual content}
-    Data                 | ⚠ Vague     | {what's there, what's missing}
-    Pre-AI Workflow      | ✗ Missing   | —
-    Post-AI Workflow     | ✗ Missing   | —
-    Quantitative Impact  | ✓ Measured  | {actual content}
-    Qualitative Impact   | ⚠ Partial   | {what's there, what's missing}
+    AI Tech              | Specific    | {actual content}
+    Personnel            | Named       | {actual content}
+    Data                 | Vague       | {what's there, what's missing}
+    Pre-AI Workflow      | Missing     | --
+    Post-AI Workflow     | Missing     | --
+    Quantitative Impact  | Measured    | {actual content}
+    Qualitative Impact   | Partial     | {what's there, what's missing}
 
     ## Wins
     {Best client achievement this session}
 
     ## Best Client Quote
-    {Direct quote — not Tim, not Human Stack staff}
+    {Direct quote -- not Tim, not Human Stack staff}
 
     ## Essential Elements Gaps
     {What's missing and which future session should target it}
@@ -384,7 +425,7 @@ Task(
 
     After writing the evaluation file, append to pipeline.log:
 
-    [{ISO 8601 timestamp}] [v1.0.0] [stage-1:phase-b:analyzer] [{Short Name}] [call-{N}]
+    [{ISO 8601 timestamp}] [v1.1.0] [stage-1:phase-b:analyzer] [{Short Name}] [call-{N}]
       Status: SUCCESS
       Output: 2-evaluations/call-{N}-evaluation.md
       transcript_page_id: {Notion page ID}
@@ -401,25 +442,51 @@ Task(
 
 **IMPORTANT CONSTRAINTS on subagent spawning:**
 - Launch ALL subagents in a SINGLE response with multiple Task tool calls
+- Every subagent uses `run_in_background: true` -- they run autonomously
 - Each subagent analyzes exactly ONE transcript
 - Each subagent reads its own reference files (fresh context window)
 - Each subagent writes its own evaluation file and log entry
-- If a client has 8 calls, spawn 8 subagents simultaneously
+- If a client has 8 calls, spawn 8 background subagents simultaneously
+- The orchestrator does NOT wait for Phase B agents to finish -- it logs
+  the launch and returns. Each agent writes its own SUCCESS/FAILED to pipeline.log
 
-## Step B2: Collect Results
+## Step B2: Log Phase B Launch (Orchestrator)
 
-After all subagents return:
+The Phase A orchestrator does NOT wait for Phase B agents to return. Instead:
 
-1. Verify each expected evaluation file exists in `2-evaluations/`.
-2. For any missing files, log as FAILED.
-3. Read each evaluation file's frontmatter to collect call types and scores.
+1. Log the launch of all Phase B agents to pipeline.log:
+   ```
+   [{ISO 8601 timestamp}] [v1.1.0] [stage-1:phase-b:launched] [{Short Name}]
+     Status: AGENTS_LAUNCHED
+     Agents spawned: {N} (one per transcript)
+     Calls: call-1 through call-{N}
+     Mode: background (run_in_background: true)
+     Monitor: Check pipeline.log for per-call SUCCESS/FAILED entries
+   ```
 
-## Step B3: Write Cross-Call Summary
+2. Return to the caller with: manifest summary, how many agents were spawned,
+   and instruction to monitor pipeline.log.
 
-After all subagents complete, write a brief summary to pipeline.log:
+**Each Phase B agent is responsible for writing its own SUCCESS/FAILED log entry
+when it finishes.** The pipeline.log becomes the coordination mechanism.
+
+## Step B3: Completion Detection (Evaluator/Caller)
+
+The evaluator (or user) checks whether Stage 1 is fully complete by:
+
+1. Reading `1-transcripts/manifest.json` to get the expected call count.
+2. Counting evaluation files in `2-evaluations/` that match `call-*-evaluation.md`.
+3. Reading `pipeline.log` for per-call SUCCESS/FAILED entries from `stage-1:phase-b:analyzer`.
+
+**Stage 1 is complete when:** evaluation file count matches manifest `calls_to_analyze` count.
+
+If some agents are still running (fewer evaluations than expected), the evaluator
+reports partial progress and can be re-checked later.
+
+When all agents have finished, the evaluator writes:
 
 ```
-[{ISO 8601 timestamp}] [v1.0.0] [stage-1:complete] [{Short Name}]
+[{ISO 8601 timestamp}] [v1.1.0] [stage-1:complete] [{Short Name}]
   Status: COMPLETE
   Calls analyzed: {N} of {total in manifest}
   Successes: {count}
@@ -430,26 +497,28 @@ After all subagents complete, write a brief summary to pipeline.log:
 
 ## Step B4: Report to User
 
-Present:
+When asked for status (or when the evaluator detects completion), present:
 - How many coaching call pages were in the relation
 - How many were filtered out (with reasons)
-- How many were analyzed successfully
-- For each analyzed call: session number, date, call type, top Essential Elements
+- How many have been analyzed so far (of total expected)
+- For each completed call: session number, date, call type, top Essential Elements
 - Any failures and why
+- Whether all agents have finished or some are still running
 - File paths written
 - Recommendation: "Stage 1 complete. Run Stage 2 to populate essentials."
+  OR "Stage 1 in progress. {N} of {M} calls analyzed. Check back shortly."
 
 ---
 
 ## What This Skill Produces
 
 Per call:
-- `1-transcripts/call-{N}-transcript.md` — raw Notion transcript with frontmatter
-- `2-evaluations/call-{N}-evaluation.md` — analytical output with attribution log,
+- `1-transcripts/call-{N}-transcript.md` -- raw Notion transcript with frontmatter
+- `2-evaluations/call-{N}-evaluation.md` -- analytical output with attribution log,
   component coverage, Essential Elements scorecard
 
 Per client:
-- `1-transcripts/manifest.json` — enumeration of all calls and filtering decisions
+- `1-transcripts/manifest.json` -- enumeration of all calls and filtering decisions
 - Appended entries in `pipeline.log`
 
 ## What This Skill Does NOT Do

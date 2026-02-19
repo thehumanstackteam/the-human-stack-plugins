@@ -16,21 +16,21 @@ generates the JSON payload, and pushes to Notion on Tim's approval.
 **This skill knows what has and hasn't been done.** It reads `pipeline.log` and checks
 the filesystem before doing anything. It never assumes a prior stage succeeded.
 
-**Plugin version: 1.0.0**
+**Plugin version: 1.1.0**
 
 ## Prerequisites
 
 - Notion MCP connector (read + write via `update-page-properties`).
 - Load these reference files BEFORE routing:
-  - `references/org-mapping.md` — client page IDs, essentials page IDs, folder names
-  - `references/endpoint-map.md` — exact Notion property names and types (all 50 fields)
-  - `references/simon-criteria.md` — the 7 Essential Elements quality gate
+  - `references/org-mapping.md` -- client page IDs, essentials page IDs, folder names
+  - `references/endpoint-map.md` -- exact Notion property names and types (all 50 fields)
+  - `references/simon-criteria.md` -- the 7 Essential Elements quality gate
 
 ## Constants
 
 ```
 ARTIFACT_ROOT = ~/Dev/claude-cowork/Clients/Project Evident Updates
-PLUGIN_VERSION = 1.0.0
+PLUGIN_VERSION = 1.1.0
 ```
 
 ## Routing Logic
@@ -39,14 +39,14 @@ Parse the request and determine the workflow:
 
 | Request Pattern | Route |
 |----------------|-------|
-| "process [client]" / "run pipeline" / "full run" | **Full pipeline**: validate → analyze → populate → HITL → push |
-| "analyze call" / "new transcript" / "run stage 1" | **Stage 1 only**: validate → dispatch call analyzer |
-| "populate essentials" / "fill endpoints" / "run stage 2" | **Stage 2 only**: validate → dispatch essentials populator |
-| "push [client]" / "push to notion" / "approve" | **Push**: validate → generate JSON → push to Notion |
+| "process [client]" / "run pipeline" / "full run" | **Full pipeline**: validate -> analyze (background) -> populate -> HITL -> push |
+| "analyze call" / "new transcript" / "run stage 1" | **Stage 1 only**: validate -> dispatch call analyzer (background) |
+| "populate essentials" / "fill endpoints" / "run stage 2" | **Stage 2 only**: validate -> dispatch essentials populator |
+| "push [client]" / "push to notion" / "approve" | **Push**: validate -> generate JSON -> push to Notion |
 | "status on [client]" / "where is [client]" | **Status check**: read log + filesystem, report state |
 | "batch" / "all clients" / "run everyone" | **Batch**: full pipeline for all 11 clients |
 
-When ambiguous, default to **status check** — it's the lightest lift and surfaces
+When ambiguous, default to **status check** -- it's the lightest lift and surfaces
 whether deeper work is needed.
 
 ## Step 0: Resolve Client and Read Pipeline State
@@ -66,6 +66,7 @@ whether deeper work is needed.
    Check: Does 1-transcripts/manifest.json exist?
    Check: Any transcript files in 1-transcripts/?
    Check: Any Stage 1 phase-a SUCCESS entries in log?
+   Check: Any AGENTS_LAUNCHED entries in log?
    Check: Any Stage 1 phase-b SUCCESS entries in log?
    Check: Any files in 2-evaluations/?
    Check: Does manifest call count match evaluation file count?
@@ -78,19 +79,21 @@ whether deeper work is needed.
    ```
 
 6. **Cross-validate log vs. filesystem:**
-   - Log says Phase A SUCCESS but no manifest.json → ERROR: "Phase A logged but manifest missing. Re-run Stage 1."
-   - Manifest exists but evaluation count < manifest call count → WARNING: "Only {N} of {M} calls analyzed. Some subagents may have failed."
-   - Log says Stage 1 SUCCESS but no files in `2-evaluations/` → ERROR: "Log says Stage 1 ran but evaluation files are missing. Re-run Stage 1."
-   - Files exist in `2-evaluations/` but no log entry → WARNING: "Found evaluation files but no log entry — may be from a previous plugin version. Proceeding with caution."
-   - Log says Stage 2 SUCCESS but no `essentials-review.md` → ERROR: "Log says Stage 2 ran but review file is missing. Re-run Stage 2."
+   - Log says Phase A SUCCESS but no manifest.json -> ERROR: "Phase A logged but manifest missing. Re-run Stage 1."
+   - AGENTS_LAUNCHED in log but evaluation count < manifest count -> IN_PROGRESS: "Phase B agents still running. {N} of {M} complete."
+   - Manifest exists but evaluation count < manifest call count -> WARNING: "Only {N} of {M} calls analyzed. Some subagents may still be running or may have failed."
+   - Log says Stage 1 SUCCESS but no files in `2-evaluations/` -> ERROR: "Log says Stage 1 ran but evaluation files are missing. Re-run Stage 1."
+   - Files exist in `2-evaluations/` but no log entry -> WARNING: "Found evaluation files but no log entry -- may be from a previous plugin version. Proceeding with caution."
+   - Log says Stage 2 SUCCESS but no `essentials-review.md` -> ERROR: "Log says Stage 2 ran but review file is missing. Re-run Stage 2."
 
 7. Determine current state:
 
    | State | Condition | Next Action |
    |-------|-----------|-------------|
    | NOT_STARTED | No log, no files | Run Stage 1 |
-   | PHASE_A_DONE | Manifest exists, no evaluations | Run Stage 1 Phase B |
-   | STAGE_1_PARTIAL | Some evaluations exist but fewer than manifest count | Re-run failed subagents |
+   | PHASE_A_DONE | Manifest exists, no evaluations, AGENTS_LAUNCHED in log | Wait -- Phase B agents are running |
+   | STAGE_1_IN_PROGRESS | Some evaluations exist but fewer than manifest count | Wait -- background agents still running. Report progress. |
+   | STAGE_1_PARTIAL | Evaluations < manifest AND no new log entries for 10+ min | Some agents may have failed. Offer to re-run missing calls. |
    | STAGE_1_DONE | All evaluations exist matching manifest | Run Stage 2 |
    | STAGE_2_DONE | Stage 2 SUCCESS in log + essentials-review.md exists | Present for HITL |
    | WAITING_FOR_HITL | WAITING_FOR_HITL in log | Wait for Tim |
@@ -100,44 +103,78 @@ whether deeper work is needed.
 ## Route: Full Pipeline
 
 1. Read state (Step 0).
-2. If NOT_STARTED or no Stage 1 output → dispatch Stage 1.
-3. After Stage 1 → validate output exists → dispatch Stage 2.
-4. After Stage 2 → validate `essentials-review.md` exists → enter HITL loop.
-5. HITL loop → on approval → generate JSON → push to Notion.
+2. If NOT_STARTED or no Stage 1 output -> dispatch Stage 1 (background).
+3. **Stage 1 runs asynchronously.** Tell the user:
+   "Stage 1 launched in background for {client}. Phase A (retrieval) and Phase B
+   (analysis) will run autonomously. Run `/evaluate-session status {client}` to
+   check progress, or `/evaluate-session process {client}` again when ready to continue."
+4. If STAGE_1_DONE (all evaluations present) -> dispatch Stage 2 (foreground subagent).
+5. After Stage 2 -> validate `essentials-review.md` exists -> enter HITL loop.
+6. HITL loop -> on approval -> generate JSON -> push to Notion.
 
-**Between each stage, re-read the filesystem.** Don't trust the subagent's report —
+**Between each stage, re-read the filesystem.** Don't trust the subagent's report --
 check that the files actually exist.
+
+**The Full Pipeline does NOT block on Stage 1.** If Stage 1 is in progress (some but
+not all evaluations exist), report progress and tell the user to check back. When
+all evaluations are present, the pipeline continues to Stage 2.
 
 ## Route: Stage 1 Only
 
 1. Read state (Step 0).
-2. Dispatch call analyzer as subagent:
+2. **Dispatch call analyzer as a background subagent:**
 
 ```
 Task(
   subagent_type: "general-purpose",
-  description: "Analyze {client} coaching calls",
-  prompt: "Invoke the project-evident:coaching-call-analyzer skill.
-    Analyze coaching calls for {Client Name}.
-    Client page ID: {client_page_id}.
-    Essentials page ID: {essentials_page_id}.
+  description: "Stage 1: Analyze {client} coaching calls",
+  run_in_background: true,
+  prompt: "You are the Phase A orchestrator for the Project Evident call analyzer pipeline.
+
+    ## Your Mission
+    1. Retrieve all coaching call transcripts from Notion for this client
+    2. Filter out cancellations and non-sessions
+    3. Write raw transcripts and a manifest to disk
+    4. Spawn one background Phase B subagent per transcript for parallel analysis
+
+    ## Client Context
+    Client: {Client Name}
+    Client Page ID: {client_page_id}
+    Essentials Page ID: {essentials_page_id}
     Folder: {ARTIFACT_ROOT}/{folder_name}/
 
-    This skill has a two-phase architecture:
-    Phase A: Fetch all coaching call pages from Notion, filter by Page Type
-    and transcript content, write raw transcripts and manifest to disk.
-    Phase B: Spawn parallel subagents — one per transcript — for analysis.
+    ## Reference Files (read these first)
+    - {skill_directory}/references/org-mapping.md
+    - {skill_directory}/references/endpoint-map.md
+    - {skill_directory}/references/simon-criteria.md
 
-    Run both phases. Return: manifest summary, file paths written, per-call
-    Essential Elements scorecards, any failures."
+    ## Instructions
+    Follow the coaching-call-analyzer skill exactly:
+    - Steps A0-A6: Retrieve, filter, write transcripts and manifest
+    - Steps B0-B1: Read manifest, spawn one background Task subagent per call
+      (run_in_background: true on each)
+    - Step B2: Log the Phase B launch to pipeline.log and return
+
+    Phase B agents run autonomously. Each writes its own evaluation file and
+    pipeline.log entry. You do NOT wait for them to finish.
+
+    Every file gets YAML frontmatter with client_page_id, essentials_page_id,
+    transcript_page_id, and plugin_version: 1.1.0.
+    If any ID can't be resolved, HALT."
 )
 ```
 
-3. After return: verify files exist:
-   - `1-transcripts/manifest.json` must exist
+3. **Report to user immediately** (do not block):
+   - "Stage 1 launched for {client} in background."
+   - "Phase A (retrieval) will run first, then Phase B (analysis) agents will spawn automatically."
+   - "Check progress: `/evaluate-session status {client}`"
+
+4. **When status is checked later**, verify files exist:
+   - `1-transcripts/manifest.json` must exist (Phase A done)
    - Read manifest to get expected call count
-   - Check that matching evaluation files exist in `2-evaluations/`
-   - Report results with any gaps
+   - Count evaluation files in `2-evaluations/` (Phase B progress)
+   - If evaluation count < manifest count: "Stage 1 in progress. {N} of {M} calls analyzed."
+   - If evaluation count == manifest count: "Stage 1 complete. Ready for Stage 2."
 
 **If some subagents failed but others succeeded**, report partial success and
 offer to re-run only the failed calls.
@@ -145,7 +182,7 @@ offer to re-run only the failed calls.
 ## Route: Stage 2 Only
 
 1. Read state (Step 0).
-2. **Validate:** ≥1 evaluation file exists in `2-evaluations/`. If not → HALT:
+2. **Validate:** >=1 evaluation file exists in `2-evaluations/`. If not -> HALT:
    "No evaluation files found. Run Stage 1 first: `/analyze-call {client}`"
 3. **If manifest exists**, check that evaluation count matches manifest count.
    If fewer evaluations than expected, warn Tim before proceeding.
@@ -160,8 +197,8 @@ Task(
     Client page ID: {client_page_id}.
     Essentials page ID: {essentials_page_id}.
     Folder: {ARTIFACT_ROOT}/{folder_name}/
-    Run the full workflow: load evaluations from 2-evaluations/ → map to 50 fields →
-    write essentials-review.md → validate against Simon's criteria → log.
+    Run the full workflow: load evaluations from 2-evaluations/ -> map to 50 fields ->
+    write essentials-review.md -> validate against Simon's criteria -> log.
     Return: quality gate results, file path, any gaps."
 )
 ```
@@ -171,17 +208,17 @@ Task(
 ## Route: Push to Notion
 
 1. Read state (Step 0).
-2. **Validate:** `3-essentials/essentials-review.md` exists. If not → HALT:
+2. **Validate:** `3-essentials/essentials-review.md` exists. If not -> HALT:
    "No essentials review file found. Run Stage 2 first: `/populate-essentials {client}`"
 3. **Validate:** `essentials_page_id` is present in the review file's frontmatter.
-   If not → HALT: "essentials-review.md is missing the Essentials DB page ID. Cannot push."
+   If not -> HALT: "essentials-review.md is missing the Essentials DB page ID. Cannot push."
 4. Enter HITL loop (see below).
 
 ## HITL Loop
 
 1. Append to pipeline.log:
    ```
-   [{timestamp}] [v1.0.0] [stage-3:evaluator] [{client}]
+   [{timestamp}] [v1.1.0] [stage-3:evaluator] [{client}]
      Status: WAITING_FOR_HITL
      Review file: 3-essentials/essentials-review.md
      Action needed: Tim reviews and approves or edits
@@ -213,7 +250,7 @@ Read the approved `essentials-review.md` and generate:
   "client": "{Short Name}",
   "client_page_id": "{from frontmatter}",
   "essentials_page_id": "{from frontmatter}",
-  "plugin_version": "1.0.0",
+  "plugin_version": "1.1.0",
   "created_at": "{ISO 8601 timestamp}",
   "source_evaluations": [
     "2-evaluations/call-1-evaluation.md",
@@ -228,16 +265,16 @@ Read the approved `essentials-review.md` and generate:
 ```
 
 **Conversion rules:**
-- Text fields → string values (exact text from the table)
-- Checkbox ✓ → `"__YES__"`, ✗ → `"__NO__"`
-- URL fields → url string
-- **Blank fields → OMIT from properties object** (don't push empty strings to Notion)
+- Text fields -> string values (exact text from the table)
+- Checkbox -> `"__YES__"` or `"__NO__"`
+- URL fields -> url string
+- **Blank fields -> OMIT from properties object** (don't push empty strings to Notion)
 - Property names must match endpoint-map.md exactly
 
 **Validation before writing JSON:**
-- `essentials_page_id` present → if missing, HALT
-- `client_page_id` present → if missing, HALT
-- All property names match endpoint-map.md → if any don't, HALT with the mismatched names
+- `essentials_page_id` present -> if missing, HALT
+- `client_page_id` present -> if missing, HALT
+- All property names match endpoint-map.md -> if any don't, HALT with the mismatched names
 - JSON is valid and parseable
 
 ## Push to Notion
@@ -252,7 +289,7 @@ Read the approved `essentials-review.md` and generate:
    ```
 3. If push succeeds, append to pipeline.log:
    ```
-   [{timestamp}] [v1.0.0] [stage-3:evaluator] [{client}]
+   [{timestamp}] [v1.1.0] [stage-3:evaluator] [{client}]
      Status: PUSHED_TO_NOTION
      Target: essentials_page_id={essentials_page_id}
      Fields pushed: {count} of 50
@@ -261,7 +298,7 @@ Read the approved `essentials-review.md` and generate:
 
 4. If push fails, append:
    ```
-   [{timestamp}] [v1.0.0] [stage-3:evaluator] [{client}]
+   [{timestamp}] [v1.1.0] [stage-3:evaluator] [{client}]
      Status: FAILED
      Error: {error from Notion API}
      Payload was: 3-essentials/essentials-payload.json
@@ -279,13 +316,13 @@ Read the approved `essentials-review.md` and generate:
 1. Read state (Step 0).
 2. Report:
    ```
-   # {Client Name} — Pipeline Status
+   # {Client Name} -- Pipeline Status
 
    State: {current state}
    Last activity: {most recent log entry timestamp}
 
-   Stage 1 Phase A (Retrieve): {# calls found, # filtered, or "not run"}
-   Stage 1 Phase B (Analyze): {# calls analyzed / # expected, or "not run"}
+   Stage 1 Phase A (Retrieve): {# calls found, # filtered, or "not run" or "in progress"}
+   Stage 1 Phase B (Analyze): {# calls analyzed / # expected, or "not run" or "in progress ({N}/{M})"}
    Stage 2 (Populate): {done/not run, quality gate if done}
    Stage 3 (Push): {pushed/waiting/not run}
 
@@ -299,14 +336,19 @@ Read the approved `essentials-review.md` and generate:
    Next step: {what to do}
    ```
 
-3. If there are FAILED entries, show the most recent error and suggest fix.
+3. **For in-progress states:**
+   - If PHASE_A_DONE with AGENTS_LAUNCHED: "Phase B analysis agents are running in background. {N} of {M} calls analyzed so far."
+   - If STAGE_1_IN_PROGRESS: "Background agents still working. {N} of {M} evaluations complete. Check back shortly."
+   - If all evaluations present but no COMPLETE entry: Write the COMPLETE entry and report "Stage 1 just finished. Ready for Stage 2."
+
+4. If there are FAILED entries, show the most recent error and suggest fix.
 
 ## Route: Batch Mode
 
 Process all clients in order:
 ```
-1. ALAS → 2. Building Promise → 3. CPA → 4. CHDC → 5. E4 Youth →
-6. EDC → 7. LAA → 8. SV@Home → 9. Sumter → 10. TAP → 11. TIP
+1. ALAS -> 2. Building Promise -> 3. CPA -> 4. CHDC -> 5. E4 Youth ->
+6. EDC -> 7. LAA -> 8. SV@Home -> 9. Sumter -> 10. TAP -> 11. TIP
 ```
 
 For each client:
@@ -321,7 +363,7 @@ At the end, produce a portfolio summary:
 
 | Client | Pages | Filtered | Analyzed | Stage 2 | Stage 3 | Quality Gate | Flags |
 |--------|-------|----------|----------|---------|---------|--------------|-------|
-| ALAS   | 13    | 7        | 6 / 6   | ✓       | Pushed  | 7/7 ✓        |       |
+| ALAS   | 13    | 7        | 6 / 6   |         | Pushed  | 7/7          |       |
 | ...    |       |          |          |         |         |              |       |
 ```
 
@@ -341,9 +383,9 @@ scope creep from efficiency goals
 ## What This Skill Produces
 
 - Pipeline state validation (reads log + filesystem + manifest)
-- Dispatches Stage 1 and Stage 2 with validation between stages
+- Dispatches Stage 1 (background) and Stage 2 with validation between stages
 - HITL review cycle management
-- `3-essentials/essentials-payload.json` — the exact Notion push payload
+- `3-essentials/essentials-payload.json` -- the exact Notion push payload
 - Notion Essentials DB updates via `update-page-properties`
 - Pipeline log entries for all actions
 
