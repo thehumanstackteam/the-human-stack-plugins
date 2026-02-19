@@ -341,11 +341,33 @@ Task(
     |--------|-----------------|
     | C1P1: Pain Point | Specific operational challenge, quantified impact, team alignment |
     | C1P2: AI Solution | Tools discussed/selected, cost/fit considerations |
-    | C2: Policy | AI policy work, governance, data ethics |
+    | C2: Policy | AI governance/responsible use policy ONLY (see below) |
     | C3P1: Foundation | Tools purchased, data identified, integrations |
     | C3P2: Testing | Pilot running, test results, training, feedback |
     | C3P3: Rollout | Full team using it, system operational |
     | C4: Progress | Before/after comparisons, savings, productivity, outcomes |
+
+    **C2 Policy -- critical distinction:**
+    C2 is EXCLUSIVELY about AI governance/responsible use policy: acceptable use
+    guidelines, data privacy rules, ethics, compliance. Resources include the
+    Fast Forward Nonprofit AI Policy Builder and Fill-in-the-Blanks AI Policy Builder.
+    Often generated during half-day session 3.
+
+    These are NOT C2 activity:
+    - Walkthrough of the AI Implementation Plan Essentials document (the coaching template)
+    - Discussion about the Essentials template itself, its fields, or its structure
+    - Homework to "review the implementation plan" or "fill in the Essentials doc"
+    - Drafting or editing the AI Implementation Plan deliverable
+
+    These ARE C2 activity:
+    - Creating, reviewing, or adopting an AI use/governance policy
+    - Homework to "review the AI policy" -- but ONLY if it refers to a governance
+      document, not the Essentials template
+    - Discussion of data privacy, acceptable use, or ethical AI guidelines
+    - Using the Fast Forward or Fill-in-the-Blanks policy builders
+
+    If no governance policy work was done in a session, C2 gets 0% confidence.
+    Do not backfill C2 with Essentials document activity.
 
     For each bucket touched:
     - Confidence score (0-100%)

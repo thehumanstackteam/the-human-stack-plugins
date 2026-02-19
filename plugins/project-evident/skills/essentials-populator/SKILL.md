@@ -271,6 +271,23 @@ created_at: {ISO 8601 timestamp}
 
 ## Component 2: Policy/Guidelines
 
+**C2 is ONLY about AI governance/responsible use policy** -- acceptable use
+guidelines, data privacy rules, responsible AI principles. It is NOT about the
+AI Implementation Plan Essentials document (the coaching deliverable/template).
+
+**C2T1F1 (Policy Document Link):** Include a link if one exists in the client's
+properties. But a link alone does not mean C2 is complete.
+
+**C2T1F2 (Policy Notes):** Content about the Essentials document, implementation
+plan, or coaching template does NOT belong in this field. This field is exclusively
+for AI governance/usage policy work. If no governance policy work was done, write:
+"No formal AI use policy has been completed or adopted."
+
+**C2 checkbox logic:** The policy link existing is not enough. C2T1F1 gets a link
+if one exists. C2T1F2 reflects whether the linked document contains substantive,
+adopted governance policy -- not whether a link was pasted. An empty template,
+abandoned draft, or "pretty discursory" draft = not completed.
+
 | Field | Value |
 |-------|-------|
 | C2T1F1: Policy Document Link | {url or blank} |
