@@ -409,7 +409,7 @@ def process_client(token, short_name, client_info):
         f"  Total pages in relation: {len(call_page_ids)}\n"
         f"  Filtered out: {len(skipped)} ({reasons_str})\n"
         f"  Calls to analyze: {len(passing_calls)}\n"
-        f"  Transcript files written: {', '.join(f'call-{c[\"call_number\"]}-transcript.md' for c in passing_calls)}\n"
+        f"  Transcript files written: {', '.join('call-' + str(c['call_number']) + '-transcript.md' for c in passing_calls)}\n"
         f"  Manifest: 1-transcripts/manifest.json\n\n"
     )
     with open(log_file, "a") as f:

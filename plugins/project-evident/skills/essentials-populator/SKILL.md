@@ -82,8 +82,8 @@ is mostly mechanical — the analytical work was done in Stage 1.
 ### How to Write Each Field Type
 
 **Checkbox fields** (e.g., C3P1T1F1: AI Tools Purchase Checked):
-Check ✓ if the attribution log shows the client took action — purchased, configured,
-used, tested. Don't check based on discussion alone.
+Use ✅ if the attribution log shows the client took action — purchased, configured,
+used, tested. Use 🚫 if not. Don't check based on discussion alone.
 
 **Owner fields** (e.g., C3P1T1F3: Owner for AI Tools Purchase):
 Named person from the attribution log. "Maria Rodriguez, Intake Coordinator" —
@@ -153,6 +153,76 @@ When the attribution log contains time/cost data, calculate:
 
 Only calculate meaningful savings. Paper reduction is values alignment, not financial.
 
+### Low/Med/High Value Proxy
+
+When value data is projected but not confirmed by direct measurement, DO NOT use
+a single point estimate. Build a three-scenario range table:
+
+| Scenario | Assumptions | Calculation | Annual Value |
+|----------|------------|-------------|-------------|
+| **Low** | Conservative scope, minimum hours | {show work} | ${amount} |
+| **Med** | Most likely based on transcript evidence | {show work} | ${amount} |
+| **High** | Full scope + effects client may not have named | {show work} | ${amount} |
+
+Rules:
+- Each scenario must show its full calculation chain (units x frequency x rate)
+- "Low" must be defensible from transcript alone -- no assumptions
+- "Med" is the best interpretation of what the client described
+- "High" accounts for hidden time (tasks the person doesn't recognize as related)
+- The summary table uses Confirmed/Projected confidence labels per category
+- Tim picks the right scenario during HITL review
+
+This proxy allows the Quantitative Impact essential element to pass the quality
+gate when approximate but not precise values exist. It was validated in the ALAS
+run -- the quality gate went from 6/7 (blocked) to actionable with L/M/H ranges
+that Tim could refine.
+
+Include the range table in essentials-review.md after the 50 fields, before the
+quality gate section.
+
+**When to use the proxy -- ALL conditions must be met:**
+1. The evaluation files contain a specific value signal FROM THE CLIENT:
+   a named number, time estimate, cost, frequency, or before/after comparison
+2. The signal was stated with enough specificity to anchor the Low scenario
+   using ONLY what was directly stated -- no assumptions added
+3. Med and High extend scope or account for hidden time, but Low is transcript-only
+
+**When NOT to use the proxy -- leave the value blank or mark qualitative:**
+- Generic statements ("saves time", "been helpful") with no numbers -> qualitative
+- Coach-stated values the client never confirmed or repeated -> not client evidence
+- "Reasonable" assumptions about how long a task should take -> fabrication
+- Analogies from other clients ("ALAS saved X so...") -> never cross-pollinate
+- No value signals exist in the attribution logs at all -> blank field
+
+The proxy structures EXISTING approximate data into actionable ranges.
+It does not generate plausible numbers where none exist.
+
+### Formatting: Line Breaks in Lists
+
+When a field value contains multiple items (numbered or bulleted), each item
+MUST be on its own line with a blank line between items. This applies to
+essentials-review.md AND essentials-payload.json (where `\n` becomes actual
+line breaks in Notion rich_text).
+
+Good:
+```
+(1) Dr. H's culturally-informed AI adoption strategy: "I need to create
+jealousy..." -- organic demand-generation over forced adoption.
+
+(2) Marisela's insight on prompting: "You just essentially direct it on how
+to think" -- Tim called this "the best explanation of prompting I've ever heard."
+
+(3) Dr. H on Promptinator: "This right here just cut a solid hour or two."
+```
+
+Bad:
+```
+(1) Dr. H's culturally-informed AI adoption strategy... (2) Marisela's insight on prompting... (3) Dr. H on Promptinator...
+```
+
+The bad version is unreadable in both the review file and Notion. Every numbered
+or bulleted item gets its own line. No exceptions.
+
 ### What Never Goes in Any Field
 
 - Internal classification tags (Measured, Stated, Observed, etc.)
@@ -210,15 +280,15 @@ created_at: {ISO 8601 timestamp}
 
 | Field | Value |
 |-------|-------|
-| C3P1T1F1: AI Tools Purchase Checked | ✓ or ✗ |
+| C3P1T1F1: AI Tools Purchase Checked | ✅ or 🚫 |
 | C3P1T1F2: Description of AI Tools Purchase | {value} |
 | C3P1T1F3: Owner for AI Tools Purchase | {value} |
 | C3P1T1F4: Progress Indicators for AI Tools Purchase | {value} |
-| C3P1T2F1: Data Identified Checked | ✓ or ✗ |
+| C3P1T2F1: Data Identified Checked | ✅ or 🚫 |
 | C3P1T2F2: Description of Data Identified and Readiness | {value} |
 | C3P1T2F3: Owner for Data Identification | {value} |
 | C3P1T2F4: Progress Indicators for Data Readiness | {value} |
-| C3P1T3F1: Technology Integration Complete Checked | ✓ or ✗ |
+| C3P1T3F1: Technology Integration Complete Checked | ✅ or 🚫 |
 | C3P1T3F2: Description of Technology Integration | {value} |
 | C3P1T3F3: Owner for Technology Integration | {value} |
 | C3P1T3F4: Progress Indicators for Technology Integration | {value} |
@@ -227,7 +297,7 @@ created_at: {ISO 8601 timestamp}
 
 | Field | Value |
 |-------|-------|
-| C3P2T1F1: Small Scale Test Run Checked | ✓ or ✗ |
+| C3P2T1F1: Small Scale Test Run Checked | ✅ or 🚫 |
 | C3P2T1F2: Description of Small Scale Test | {value} |
 | C3P2T1F3: Owner for Small Scale Test | {value} |
 | C3P2T1F4: Progress Indicators for Small Scale Test | {value} |
@@ -236,7 +306,7 @@ created_at: {ISO 8601 timestamp}
 
 | Field | Value |
 |-------|-------|
-| C3P3T1F1: Wider Rollout Checked | ✓ or ✗ |
+| C3P3T1F1: Wider Rollout Checked | ✅ or 🚫 |
 | C3P3T1F2: Description of Wider Rollout | {value} |
 | C3P3T1F3: Owner for Wider Rollout | {value} |
 | C3P3T1F4: Progress Indicators for Wider Rollout | {value} |
@@ -252,7 +322,7 @@ created_at: {ISO 8601 timestamp}
 
 | Field | Value |
 |-------|-------|
-| C4P2T1F1: Cost Savings Checked | ✓ or ✗ |
+| C4P2T1F1: Cost Savings Checked | ✅ or 🚫 |
 | C4P2T1F2: Description of Cost Savings | {value} |
 | C4P2T1F3: Evidence of Cost Savings | {value} |
 
@@ -260,7 +330,7 @@ created_at: {ISO 8601 timestamp}
 
 | Field | Value |
 |-------|-------|
-| C4P2T2F1: Productivity Gains Checked | ✓ or ✗ |
+| C4P2T2F1: Productivity Gains Checked | ✅ or 🚫 |
 | C4P2T2F2: Description of Productivity Gains | {value} |
 | C4P2T2F3: Evidence of Productivity Gains | {value} |
 
@@ -268,7 +338,7 @@ created_at: {ISO 8601 timestamp}
 
 | Field | Value |
 |-------|-------|
-| C4P2T3F1: Policy Changes Checked | ✓ or ✗ |
+| C4P2T3F1: Policy Changes Checked | ✅ or 🚫 |
 | C4P2T3F2: Description of Policy Changes | {value} |
 | C4P2T3F3: Evidence of Policy Changes | {value} |
 
@@ -276,7 +346,7 @@ created_at: {ISO 8601 timestamp}
 
 | Field | Value |
 |-------|-------|
-| C4P2T4F1: Service Delivery Improvements Checked | ✓ or ✗ |
+| C4P2T4F1: Service Delivery Improvements Checked | ✅ or 🚫 |
 | C4P2T4F2: Description of Service Delivery Improvements | {value} |
 | C4P2T4F3: Evidence of Service Delivery Improvements | {value} |
 
@@ -284,7 +354,7 @@ created_at: {ISO 8601 timestamp}
 
 | Field | Value |
 |-------|-------|
-| C4P2T5F1: Outcomes Improved Checked | ✓ or ✗ |
+| C4P2T5F1: Outcomes Improved Checked | ✅ or 🚫 |
 | C4P2T5F2: Description of Outcomes Improved | {value} |
 | C4P2T5F3: Evidence of Outcomes Improved | {value} |
 
@@ -292,7 +362,7 @@ created_at: {ISO 8601 timestamp}
 
 | Field | Value |
 |-------|-------|
-| C4P2T6F1: Increased Funding Checked | ✓ or ✗ |
+| C4P2T6F1: Increased Funding Checked | ✅ or 🚫 |
 | C4P2T6F2: Description of Increased Funding | {value} |
 | C4P2T6F3: Evidence of Increased Funding | {value} |
 
@@ -300,7 +370,7 @@ created_at: {ISO 8601 timestamp}
 
 | Field | Value |
 |-------|-------|
-| C4P2T7F1: Other Changes Checked | ✓ or ✗ |
+| C4P2T7F1: Other Changes Checked | ✅ or 🚫 |
 | C4P2T7F2: Description of Other Changes | {value} |
 | C4P2T7F3: Evidence of Other Changes | {value} |
 
@@ -332,7 +402,7 @@ Qualitative Impact   | {✓/⚠/✗}   | {content or gap}
 ```
 
 **All 50 fields must appear.** Blank fields shown as blank, not omitted.
-Checkbox fields show ✓ or ✗.
+Checkbox fields show ✅ or 🚫.
 
 **The file must be human-editable.** Tim opens this in a text editor, changes values,
 saves, then tells the evaluator to push. No special formatting beyond markdown tables.

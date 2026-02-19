@@ -365,6 +365,40 @@ Task(
     Track which of Simon's 7 Essential Elements are addressed with actual content.
     (See simon-criteria.md for specificity tests.)
 
+    ### Low/Med/High Value Proxy
+    When transcripts contain projected but unconfirmed value data, DO NOT pick a
+    single number. Instead, build L/M/H scenario ranges:
+
+    - **Low**: Minimum defensible scope (e.g., 1 program, conservative time estimate)
+    - **Med**: Most likely scope based on what was discussed
+    - **High**: Full scope including ripple effects the client may not have named
+
+    For each scenario, show the calculation chain: units x frequency x rate = value.
+
+    Example from ALAS:
+    - Veronica donor data: Low 3hrs/wk, Med 5hrs/wk, High 8hrs/wk -> $11,830-$33,800/yr
+    - Form testing: Low 6 forms, Med 18 forms, High 18+ with regression -> $15K-$120K
+
+    This lets the quality gate pass on Quantitative Impact with a flag. Tim picks
+    the right range during HITL review. The proxy prevents false failures on the
+    quality gate when evidence exists but precise measurement doesn't.
+
+    **When to use the proxy -- ALL of these must be true:**
+    - The transcript contains a specific value signal from the CLIENT (not the coach):
+      a number, a time estimate, a cost, a frequency, or a before/after comparison
+    - The signal was stated with enough specificity to anchor the Low scenario
+    - At least the Low scenario uses ONLY what was directly stated
+
+    **When NOT to use the proxy -- leave the field blank or mark as qualitative:**
+    - "It saves time" / "It's been helpful" with no specifics -> qualitative only
+    - Coach suggested a value the client didn't confirm or repeat
+    - Reasonable assumption about what a task "should" take -> fabrication
+    - Analogies from other clients -> never
+    - No value signal exists in the attribution log at all -> blank
+
+    The proxy is a structured way to present EXISTING approximate data. It is
+    not a license to generate plausible numbers.
+
     ## Output Format
 
     Write the evaluation file with this exact structure:
