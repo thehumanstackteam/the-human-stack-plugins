@@ -16,4 +16,4 @@ When you install this plugin, Cowork will prompt you to connect Notion if it's n
 - Both Notion and Notion Writer MCPs are provided by the single Notion connector
 - No API tokens or environment variables needed
 - Stage 1 and Stage 2 only READ from Notion — all writes go to the local filesystem
-- Only Stage 3 (evaluator) writes to Notion, and only after Tim's explicit approval
+- Stage 3 writes to Notion autonomously. Tim vetoes after via Notion comments

@@ -414,7 +414,7 @@ Task(
     - Form testing: Low 6 forms, Med 18 forms, High 18+ with regression -> $15K-$120K
 
     This lets the quality gate pass on Quantitative Impact with a flag. Tim picks
-    the right range during HITL review. The proxy prevents false failures on the
+    the right range during review. The proxy prevents false failures on the
     quality gate when evidence exists but precise measurement doesn't.
 
     **When to use the proxy -- ALL of these must be true:**

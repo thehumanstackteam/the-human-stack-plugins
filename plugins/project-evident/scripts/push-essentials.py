@@ -340,7 +340,7 @@ def process_client(token, short_name, client_info, dry_run=False, clean_only=Fal
         return True
 
     # Step 3: Load values
-    # Prefer payload JSON (post-HITL), fall back to review MD
+    # Prefer payload JSON if it exists, fall back to review MD
     values = load_payload_json(folder_path)
     source = "essentials-payload.json"
     if values is None:

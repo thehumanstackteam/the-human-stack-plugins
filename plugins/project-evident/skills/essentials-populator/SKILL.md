@@ -4,7 +4,7 @@ description: >
   Stage 2 of the Project Evident pipeline. Reads evaluation files from the client's
   Working Files folder, maps content to 50 Essentials fields using the endpoint map,
   validates against Simon's 7 Essential Elements, and writes essentials-review.md for
-  HITL review. Use for "populate essentials", "fill endpoints", "run stage 2 for [client]".
+  Use for "populate essentials", "fill endpoints", "run stage 2 for [client]".
 ---
 
 # Essentials Populator (Stage 2)
@@ -195,7 +195,7 @@ Rules:
 - "Med" is the best interpretation of what the client described
 - "High" accounts for hidden time (tasks the person doesn't recognize as related)
 - The summary table uses Confirmed/Projected confidence labels per category
-- Tim picks the right scenario during HITL review
+- Tim picks the right scenario during review (veto via Notion comments)
 
 This proxy allows the Quantitative Impact essential element to pass the quality
 gate when approximate but not precise values exist. It was validated in the ALAS
@@ -480,7 +480,7 @@ Present:
 
 ## What This Skill Produces
 
-- `3-essentials/essentials-review.md` — human-readable, editable HITL document with
+- `3-essentials/essentials-review.md` — human-readable, editable review document with
   all 50 fields, quality gate, and YAML frontmatter with Notion IDs
 - Appended entry in `pipeline.log`
 
@@ -490,4 +490,4 @@ Present:
 - Analyze raw transcripts from scratch (use Stage 1: call-analyzer)
 - Update component statuses on the Client Page
 - Generate the Google Doc (use the Essentials DB button)
-- Generate essentials-payload.json (that's Stage 3 after HITL approval)
+- Generate essentials-payload.json (that's Stage 3)
