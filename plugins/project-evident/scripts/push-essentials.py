@@ -24,7 +24,7 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
-PLUGIN_VERSION = "1.1.0"
+PLUGIN_VERSION = "2.2.0"
 ARTIFACT_ROOT = Path.home() / "Dev" / "claude-cowork" / "Clients" / "Project Evident Updates"
 NOTION_API = "https://api.notion.com/v1"
 NOTION_VERSION = "2022-06-28"
@@ -352,7 +352,16 @@ def load_payload_json(folder_path):
 
 
 def load_review_md(folder_path):
-    """Parse essentials-review.md tables to extract field values."""
+    """Parse essentials-review.md to extract field values.
+
+    Supports two formats:
+    1. Bold-header format (primary -- matches SKILL.md output):
+       **C1P1T1: Pain Point**
+       {paragraph value spanning one or more lines}
+
+    2. Table format (legacy fallback):
+       | Field Name | Value |
+    """
     review_file = folder_path / "3-essentials" / "essentials-review.md"
     if not review_file.exists():
         return None
@@ -360,25 +369,49 @@ def load_review_md(folder_path):
     text = review_file.read_text()
     values = {}
 
-    # Parse markdown tables: | Field Name | Value |
-    for line in text.split("\n"):
-        line = line.strip()
-        if not line.startswith("|"):
-            continue
-        parts = [p.strip() for p in line.split("|")]
-        # parts[0] is empty (before first |), parts[-1] is empty (after last |)
-        if len(parts) < 4:
-            continue
-        field = parts[1]
-        value = parts[2]
+    # Strategy 1: Parse bold-header format (**FieldName** followed by content)
+    bold_pattern = re.compile(r"^\*\*(.+?)\*\*\s*$")
+    lines = text.split("\n")
+    i = 0
+    while i < len(lines):
+        match = bold_pattern.match(lines[i].strip())
+        if match:
+            field = match.group(1).strip()
+            if field in ENDPOINT_FIELDS:
+                # Collect content lines until next bold header, heading, or divider
+                content_lines = []
+                i += 1
+                while i < len(lines):
+                    stripped = lines[i].strip()
+                    # Stop at next bold header, markdown heading, or horizontal rule
+                    if bold_pattern.match(stripped):
+                        break
+                    if stripped.startswith("### ") or stripped.startswith("## ") or stripped == "---":
+                        break
+                    content_lines.append(lines[i].rstrip())
+                    i += 1
+                # Join and strip leading/trailing blank lines
+                value = "\n".join(content_lines).strip()
+                if value:
+                    values[field] = value
+                continue
+        i += 1
 
-        # Skip header rows
-        if field in ("Field", "---", "Element") or field.startswith("-"):
-            continue
-
-        # Match against known fields
-        if field in ENDPOINT_FIELDS:
-            values[field] = value
+    # Strategy 2: Fallback to table format if bold-header found nothing
+    if not values:
+        for line in lines:
+            line = line.strip()
+            if not line.startswith("|"):
+                continue
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) < 4:
+                continue
+            field = parts[1]
+            value = parts[2]
+            if field in ("Field", "---", "Element") or field.startswith("-"):
+                continue
+            if field in ENDPOINT_FIELDS:
+                values[field] = value
 
     return values
 

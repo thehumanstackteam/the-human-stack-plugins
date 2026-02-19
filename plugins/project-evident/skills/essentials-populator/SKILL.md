@@ -13,7 +13,7 @@ Reads evaluation files from `2-evaluations/` → maps content to 50 Notion field
 endpoint-map.md → validates against Simon's 7 Essential Elements → writes
 `3-essentials/essentials-review.md` for Tim's review → appends to pipeline.log.
 
-**Plugin version: 2.1.0**
+**Plugin version: 2.2.0**
 
 **Invocation required:** This output must be produced by invoking this skill or
 by the orchestrator reading this file from disk before running Stage 2. Do not
@@ -39,7 +39,7 @@ have dropped them.
 
 ```
 ARTIFACT_ROOT = ~/Dev/claude-cowork/Clients/Project Evident Updates
-PLUGIN_VERSION = 2.1.0
+PLUGIN_VERSION = 2.2.0
 ```
 
 ## Step 0: Resolve Client and Validate
@@ -336,7 +336,7 @@ essentials_page_id: {from org-mapping / validated from evaluations}
 source_evaluations:
   - 2-evaluations/call-1-evaluation.md
   - 2-evaluations/call-2-evaluation.md
-plugin_version: 2.1.0
+plugin_version: 2.2.0
 created_at: {ISO 8601 timestamp}
 ---
 
@@ -532,12 +532,61 @@ Checkbox fields show `__YES__` or `__NO__`.
 **The file must be human-editable.** Tim opens this in a text editor, changes values,
 saves, then tells the evaluator to push. No special formatting beyond markdown tables.
 
+## Step 4.5: Write essentials-payload.json
+
+**File:** `{ARTIFACT_ROOT}/{folder_name}/3-essentials/essentials-payload.json`
+
+Write a machine-readable JSON file alongside essentials-review.md. The push script
+(`push-essentials.py`) prefers this format over parsing the markdown.
+
+```json
+{
+  "client": "{Short Name}",
+  "client_page_id": "{client_page_id}",
+  "essentials_page_id": "{essentials_page_id}",
+  "plugin_version": "2.2.0",
+  "created_at": "{ISO 8601 timestamp}",
+  "quality_gate": {
+    "passing": 7,
+    "total": 7,
+    "elements": {
+      "AI Tech": "pass",
+      "Personnel": "pass",
+      "Data": "pass",
+      "Pre-AI Workflow": "pass",
+      "Post-AI Workflow": "pass",
+      "Quantitative Impact": "pass",
+      "Qualitative Impact": "pass"
+    }
+  },
+  "properties": {
+    "C1P1T1: Pain Point": "paragraph value here",
+    "C1P1T2: Current Impact": "paragraph value here",
+    "C3P1T1F1: AI Tools Purchase Checked": "__YES__",
+    "C3P1T1F2: Description of AI Tools Purchase": "paragraph value here",
+    "Coaching Notes": "paragraph value here",
+    "Aha Moments": "paragraph value here"
+  }
+}
+```
+
+Rules:
+- The `properties` object must include ALL 50 endpoint fields from endpoint-map.md.
+- Blank fields: use empty string `""`, not `null`.
+- Checkbox fields: use `"__YES__"` or `"__NO__"` (string, not boolean -- the push
+  script handles conversion).
+- URL fields: use the URL string or `""`.
+- Text fields: use the full paragraph value. Use `\n` for line breaks within values
+  (these become actual line breaks in Notion rich_text).
+- The `quality_gate` object records the gate results for logging.
+- Field names must EXACTLY match the endpoint-map.md names (case-sensitive).
+
 ## Step 5: Append to Pipeline Log
 
 Append to `{ARTIFACT_ROOT}/{folder_name}/pipeline.log`:
 
 ```
-[{ISO 8601 timestamp}] [v2.1.0] [stage-2:essentials-populator] [{Short Name}]
+[{ISO 8601 timestamp}] [v2.2.0] [stage-2:essentials-populator] [{Short Name}]
   Status: SUCCESS
   Input: 2-evaluations/call-1-evaluation.md, call-2-evaluation.md
   Output: 3-essentials/essentials-review.md
@@ -546,7 +595,7 @@ Append to `{ARTIFACT_ROOT}/{folder_name}/pipeline.log`:
 
 Or on failure:
 ```
-[{ISO 8601 timestamp}] [v2.1.0] [stage-2:essentials-populator] [{Short Name}]
+[{ISO 8601 timestamp}] [v2.2.0] [stage-2:essentials-populator] [{Short Name}]
   Status: FAILED
   Error: {what went wrong}
 ```
@@ -565,6 +614,8 @@ Present:
 
 - `3-essentials/essentials-review.md` — human-readable, editable review document with
   all 50 fields, quality gate, and YAML frontmatter with Notion IDs
+- `3-essentials/essentials-payload.json` — machine-readable JSON with all 50 fields,
+  quality gate results, and metadata. Used by `push-essentials.py` for reliable parsing.
 - Appended entry in `pipeline.log`
 
 ## What This Skill Does NOT Do
@@ -573,4 +624,4 @@ Present:
 - Analyze raw transcripts from scratch (use Stage 1: call-analyzer)
 - Update component statuses on the Client Page
 - Generate the Google Doc (use the Essentials DB button)
-- Generate essentials-payload.json (that's Stage 3)
+- Run push-essentials.py (that's Stage 3, run by the orchestrator)
