@@ -19,8 +19,8 @@ power after the fact.
 | Populating Fields | 2 | Mapping evaluations to 50 fields |
 | Quality Gate | 2.5 | Checking 7/7 elements. Auto-retry if fail |
 | Pushing to Notion | 3 | Writing fields + page body to Essentials page |
-| Pushed To Document | Final | Complete. Tim can veto and request revisions |
-| Revise | Veto | Tim requested changes |
+| Pushed To Document | Final | Complete. Tim reviews in Notion |
+| Revise | Veto | Tim left comments on the Essentials page. Agent reads and fixes |
 | Waiting for Review | Post-veto | Revision done, awaiting Tim's check |
 
 ## Sequence
@@ -138,7 +138,8 @@ Task(
    autonomously. Watch the Status field on the Essentials page in Notion for live progress.
 
    Check pipeline.log for details.
-   Veto changes: `/evaluate-session revise {client}`"
+   To request changes: add comments on the Essentials page in Notion, then
+   `/evaluate-session revise {client}` -- the agent reads your comments and fixes."
 
 6. **If $ARGUMENTS is "all":**
    Launch one orchestrator per client, ALL in a single message (parallel).
