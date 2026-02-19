@@ -334,8 +334,8 @@ properties. But a link alone does not mean C2 is complete.
 
 **C2T1F2 (Policy Notes):** Content about the Essentials document, implementation
 plan, or coaching template does NOT belong in this field. This field is exclusively
-for AI governance/usage policy work. If no governance policy work was done, write:
-"No formal AI use policy has been completed or adopted."
+for AI governance/usage policy work. If no governance policy work was done,
+leave it blank.
 
 **C2 checkbox logic:** The policy link existing is not enough. C2T1F1 gets a link
 if one exists. C2T1F2 reflects whether the linked document contains substantive,
