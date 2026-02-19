@@ -282,6 +282,10 @@ reads like an incident report.
 - Marketing copy where observations should be
 - Anything that sounds plausible but wasn't in the transcript
 - Crisis language about staffing changes (survival mode, inability, loss)
+- Editorializing about motivations ("created to satisfy a grant requirement",
+  "only did this because...", "reluctantly adopted")
+- Explaining why something WASN'T done -- if it's not done, leave blank or
+  state plainly: "No formal AI use policy has been completed." Full stop.
 
 ## Step 3: Supplementary Transcript Pull (If Needed)
 
