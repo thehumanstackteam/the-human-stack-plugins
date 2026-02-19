@@ -167,13 +167,20 @@ def build_push_properties(values):
 
         field_type = ENDPOINT_FIELDS[field_name]
 
-        if not value or value.strip() == "":
-            continue  # Skip blanks
-
         if field_type == "checkbox":
-            is_checked = value.strip().upper() in ("__YES__", "YES", "TRUE", "1") or value.strip() == "\u2705"
+            # Handle both bool and string values
+            if isinstance(value, bool):
+                is_checked = value
+            else:
+                is_checked = str(value).strip().upper() in ("__YES__", "YES", "TRUE", "1") or str(value).strip() == "\u2705"
             props[field_name] = {"checkbox": is_checked}
-        elif field_type == "url":
+            continue
+
+        # Skip blanks for non-checkbox fields
+        if not value or (isinstance(value, str) and value.strip() == ""):
+            continue
+
+        if field_type == "url":
             url_val = value.strip()
             if url_val and url_val.startswith("http"):
                 props[field_name] = {"url": url_val}
@@ -212,13 +219,86 @@ def clear_page_content(token, page_id):
     return len(blocks)
 
 
+def parse_table_row(line):
+    """Parse a markdown table row into a list of cell strings."""
+    parts = [p.strip() for p in line.split("|")]
+    # Remove empty first/last from leading/trailing |
+    if parts and parts[0] == "":
+        parts = parts[1:]
+    if parts and parts[-1] == "":
+        parts = parts[:-1]
+    return parts
+
+
+def is_separator_row(line):
+    """Check if a markdown table row is a separator (|---|---|)."""
+    stripped = line.replace("|", "").replace("-", "").replace(":", "").strip()
+    return stripped == ""
+
+
+def build_table_block(table_lines):
+    """Convert a list of markdown table lines into a Notion table block."""
+    rows = []
+    col_count = 0
+    for line in table_lines:
+        if is_separator_row(line):
+            continue
+        cells = parse_table_row(line)
+        if not col_count:
+            col_count = len(cells)
+        # Pad or trim to consistent width
+        while len(cells) < col_count:
+            cells.append("")
+        cells = cells[:col_count]
+        row = {
+            "object": "block",
+            "type": "table_row",
+            "table_row": {
+                "cells": [
+                    [{"type": "text", "text": {"content": c[:2000]}}] if c else []
+                    for c in cells
+                ]
+            }
+        }
+        rows.append(row)
+
+    if not rows:
+        return None
+
+    return {
+        "object": "block",
+        "type": "table",
+        "table": {
+            "table_width": col_count,
+            "has_column_header": True,
+            "has_row_header": False,
+            "children": rows,
+        }
+    }
+
+
 def push_page_content(token, page_id, markdown_content):
     """Push markdown content as blocks to the page body."""
     blocks = []
-    for line in markdown_content.split("\n"):
-        line = line.rstrip()
+    lines = markdown_content.split("\n")
+    i = 0
+    while i < len(lines):
+        line = lines[i].rstrip()
         if not line:
+            i += 1
             continue
+
+        # Collect consecutive table lines
+        if line.startswith("|"):
+            table_lines = []
+            while i < len(lines) and lines[i].rstrip().startswith("|"):
+                table_lines.append(lines[i].rstrip())
+                i += 1
+            table_block = build_table_block(table_lines)
+            if table_block:
+                blocks.append(table_block)
+            continue
+
         if line.startswith("### "):
             blocks.append({
                 "object": "block",
@@ -246,13 +326,13 @@ def push_page_content(token, page_id, markdown_content):
         elif line.startswith("---"):
             blocks.append({"object": "block", "type": "divider", "divider": {}})
         else:
-            # Truncate to 2000 chars per paragraph block
             text = line[:2000]
             blocks.append({
                 "object": "block",
                 "type": "paragraph",
                 "paragraph": {"rich_text": [{"type": "text", "text": {"content": text}}]},
             })
+        i += 1
 
     # Notion allows max 100 blocks per append
     for i in range(0, len(blocks), 100):
