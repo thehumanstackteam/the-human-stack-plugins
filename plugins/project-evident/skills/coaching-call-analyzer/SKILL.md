@@ -510,6 +510,13 @@ Task(
     Never use crisis language (survival mode, inability, loss). This carries
     through to Stage 2 where it becomes funder-facing text.
 
+    Good: "Program packet assembled for successor onboarding. AI policies
+    received and implementation underway. Peer supervisor identified for
+    event-day data capture."
+    Bad: "No wider rollout activity yet. Matt confirmed receipt of AI policies
+    but has not yet independently operated the Gemini workflows."
+    Lead with what WAS accomplished, not what hasn't happened yet.
+
     ## Best Client Quote
     {Direct quote -- not Tim, not Human Stack staff}
 

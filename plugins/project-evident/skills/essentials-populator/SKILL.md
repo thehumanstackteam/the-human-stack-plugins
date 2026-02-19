@@ -280,8 +280,20 @@ Bad: "The organization is in survival mode with only two staff after Theo's
 transition to contractor status. The HIRE program is paused due to inability
 to deliver with current staffing."
 
+Good (rollout description): "Program packet assembled for successor onboarding.
+AI policies received and implementation underway. Peer supervisor identified
+for event-day data capture. Tim offered to share Gem and Google Sheet artifacts
+with Matt. Spring 2026 HIRE event identified as rollout target."
+
+Bad (rollout description): "No wider rollout activity yet. Theo's succession
+planning included packaging tools and workflows for handoff. Matt confirmed
+receipt of AI policies but has not yet independently operated the Gemini
+workflows. Tim offered to share the Gem and Google Sheet artifacts with Matt.
+Spring 2026 HIRE event identified as rollout target."
+
 Both describe the same facts. The first reads like a funder report. The second
-reads like an incident report.
+reads like an incident report. The rollout examples show the same pattern:
+lead with what WAS accomplished, not what hasn't happened yet.
 
 ### What Never Goes in Any Field
 
