@@ -52,20 +52,22 @@ Task(
     Client Page ID: {client_page_id}
     Essentials Page ID: {essentials_page_id}
     Folder: ~/Dev/claude-cowork/Clients/Project Evident Updates/{folder_name}/
-    Scripts: /tmp/ths-plugins/plugins/project-evident/scripts/
+    Scripts: ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/scripts/
     Current state: {state from step 3}
 
-    CRITICAL: Before EVERY stage, update the Notion status:
+    CRITICAL -- NOTION TOKEN: Export ONCE at the very start of the pipeline.
+    All subsequent script calls inherit this env var. Do NOT call op again.
     export NOTION_API_KEY=$(op item get 'Notion Token' --vault 'MCP Tokens' --fields credential --reveal 2>/dev/null)
-    python3 /tmp/ths-plugins/plugins/project-evident/scripts/update-status.py '{client_short_name}' '<STATUS>'
+
+    CRITICAL -- STATUS UPDATES: Before EVERY stage, update the Notion status:
+    python3 ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/scripts/update-status.py '{client_short_name}' '<STATUS>'
 
     ## STAGE 1A: Pull Transcripts
     Skip if 1-transcripts/manifest.json already exists with calls.
 
     1. Update status: 'Pulling Transcripts'
     2. Run:
-       export NOTION_API_KEY=$(op item get 'Notion Token' --vault 'MCP Tokens' --fields credential --reveal 2>/dev/null)
-       python3 /tmp/ths-plugins/plugins/project-evident/scripts/pull-transcripts.py '{client_short_name}'
+       python3 ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/scripts/pull-transcripts.py '{client_short_name}'
     3. Verify: manifest.json exists and lists calls_to_analyze.
 
     ## STAGE 1B: Analyze Each Transcript
@@ -107,8 +109,7 @@ Task(
     ## STAGE 3: Push to Notion
     1. Update status: 'Pushing to Notion'
     2. Push all 50 endpoint fields to the Essentials page:
-       export NOTION_API_KEY=$(op item get 'Notion Token' --vault 'MCP Tokens' --fields credential --reveal 2>/dev/null)
-       python3 /tmp/ths-plugins/plugins/project-evident/scripts/push-essentials.py '{client_short_name}'
+       python3 ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/scripts/push-essentials.py '{client_short_name}'
     3. Verify push succeeded (check exit code)
     4. Log to pipeline.log
 
@@ -138,8 +139,8 @@ Task(
        - Test: could Simon paste this with zero edits?
     3. Write to {ARTIFACT_ROOT}/{folder_name}/4-summary/simon-summary.md
     4. Push the summary to the "Simon Summary" rich_text property on the Client page
-       (client_page_id, NOT essentials_page_id):
-       export NOTION_API_KEY=$(op item get 'Notion Token' --vault 'MCP Tokens' --fields credential --reveal 2>/dev/null)
+       (client_page_id, NOT essentials_page_id).
+       NOTION_API_KEY is already exported from pipeline start -- do NOT call op again.
        Use Notion API PATCH to /pages/{client_page_id} with:
        {"properties": {"Simon Summary": {"rich_text": [{"text": {"content": "{summary}"}}]}}}
        If summary exceeds 2000 chars, split into multiple rich_text array elements
