@@ -248,6 +248,30 @@ Bad:
 The bad version is unreadable in both the review file and Notion. Every numbered
 or bulleted item gets its own line. No exceptions.
 
+### Framing: Staff Transitions and Organizational Change
+
+This is a funder-facing document. Write about staffing changes the way a
+funder report would: as organizational resilience, knowledge transfer, and
+continuity planning.
+
+- Staff departures = "staffing transition" or "role transition", not "loss"
+- Reduced capacity = "lean team" or "streamlined operations", not "survival mode"
+- Paused programs = "on hold pending [specific milestone]", not "inability to deliver"
+- Someone leaving = what they built, what they handed off, what's ready for the next person
+- Focus on what the organization DID with the situation, not the disruption itself
+
+Good: "Theo developed the phone photo workflow and prepared a program packet
+to support onboarding a successor. The organization plans to deploy the
+AI-assisted data collection process when the new program manager is in place
+for the spring 2026 HIRE event."
+
+Bad: "The organization is in survival mode with only two staff after Theo's
+transition to contractor status. The HIRE program is paused due to inability
+to deliver with current staffing."
+
+Both describe the same facts. The first reads like a funder report. The second
+reads like an incident report.
+
 ### What Never Goes in Any Field
 
 - Internal classification tags (Measured, Stated, Observed, etc.)
@@ -257,6 +281,7 @@ or bulleted item gets its own line. No exceptions.
 - Polite acknowledgments treated as adoption
 - Marketing copy where observations should be
 - Anything that sounds plausible but wasn't in the transcript
+- Crisis language about staffing changes (survival mode, inability, loss)
 
 ## Step 3: Supplementary Transcript Pull (If Needed)
 

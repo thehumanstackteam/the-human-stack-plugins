@@ -504,6 +504,12 @@ Task(
     ## Wins
     {Best client achievement this session}
 
+    NOTE on staff transitions: When transcripts mention staffing changes,
+    departures, or reduced capacity, frame as resilience and continuity --
+    what was built, what was handed off, what's ready for the next person.
+    Never use crisis language (survival mode, inability, loss). This carries
+    through to Stage 2 where it becomes funder-facing text.
+
     ## Best Client Quote
     {Direct quote -- not Tim, not Human Stack staff}
 
