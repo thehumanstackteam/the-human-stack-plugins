@@ -16,7 +16,7 @@ Read the essentials-review.md for a client -> write a funder-ready summary
 sentence -> push to the "Simon Summary" rich_text property on the client's
 page in the Clients database.
 
-**Plugin version: 2.0.0**
+**Plugin version: 2.1.0**
 
 **Invocation required:** This output must be produced by invoking this skill or
 by the orchestrator reading this file from disk before running Stage 4. Do not
@@ -152,7 +152,7 @@ Save to `{ARTIFACT_ROOT}/{folder_name}/4-summary/simon-summary.md`:
 ---
 client: {Short Name}
 client_page_id: {from org-mapping}
-plugin_version: 2.0.0
+plugin_version: 2.1.0
 created_at: {ISO 8601 timestamp}
 source: 3-essentials/essentials-review.md
 ---
@@ -170,7 +170,7 @@ multiple rich_text array elements at sentence boundaries.
 
 Append to pipeline.log:
 ```
-[{ISO 8601 timestamp}] [v2.0.0] [stage-4:simon-summary] [{Short Name}]
+[{ISO 8601 timestamp}] [v2.1.0] [stage-4:simon-summary] [{Short Name}]
   Status: SUCCESS
   Output: 4-summary/simon-summary.md
   Target: Client page {client_page_id} -> "Simon Summary" property

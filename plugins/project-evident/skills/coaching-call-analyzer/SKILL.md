@@ -20,7 +20,7 @@ Two-phase architecture running as **autonomous background subagents**:
 Both phases run in the background via `run_in_background: true`. The main conversation
 stays free for other work. Progress is tracked in `pipeline.log`.
 
-**Plugin version: 2.0.0**
+**Plugin version: 2.1.0**
 
 **Invocation required:** This output must be produced by invoking this skill or
 by the orchestrator reading this file from disk before running Stage 1. Do not
@@ -45,7 +45,7 @@ prompt itself.
 
 ```
 ARTIFACT_ROOT = ~/Dev/claude-cowork/Clients/Project Evident Updates
-PLUGIN_VERSION = 2.0.0
+PLUGIN_VERSION = 2.1.0
 ```
 
 ---
@@ -177,7 +177,7 @@ transcript_page_id: {Notion page ID of this coaching call}
 session: {N}
 date: {YYYY-MM-DD}
 title: {page title from Notion}
-plugin_version: 2.0.0
+plugin_version: 2.1.0
 created_at: {ISO 8601 timestamp}
 ---
 
@@ -231,7 +231,7 @@ After writing ALL transcripts, write a manifest that Phase B will use to spawn a
 
 Append to pipeline.log:
 ```
-[{ISO 8601 timestamp}] [v2.0.0] [stage-1:phase-a:retrieval] [{Short Name}]
+[{ISO 8601 timestamp}] [v2.1.0] [stage-1:phase-a:retrieval] [{Short Name}]
   Status: SUCCESS
   Total pages in relation: {N}
   Filtered out: {count} ({reasons})
@@ -450,7 +450,7 @@ Task(
     session: {N}
     date: {date}
     call_type: {Rapport|Exploration|Traction|Wrap}
-    plugin_version: 2.0.0
+    plugin_version: 2.1.0
     created_at: {ISO 8601 timestamp}
     source_transcript: ../1-transcripts/call-{N}-transcript.md
     ---
@@ -532,7 +532,7 @@ Task(
 
     After writing the evaluation file, append to pipeline.log:
 
-    [{ISO 8601 timestamp}] [v2.0.0] [stage-1:phase-b:analyzer] [{Short Name}] [call-{N}]
+    [{ISO 8601 timestamp}] [v2.1.0] [stage-1:phase-b:analyzer] [{Short Name}] [call-{N}]
       Status: SUCCESS
       Output: 2-evaluations/call-{N}-evaluation.md
       transcript_page_id: {Notion page ID}
@@ -569,7 +569,7 @@ The Phase A orchestrator does NOT wait for Phase B agents to return. Instead:
 
 1. Log the launch of all Phase B agents to pipeline.log:
    ```
-   [{ISO 8601 timestamp}] [v2.0.0] [stage-1:phase-b:launched] [{Short Name}]
+   [{ISO 8601 timestamp}] [v2.1.0] [stage-1:phase-b:launched] [{Short Name}]
      Status: AGENTS_LAUNCHED
      Agents spawned: {N} (one per transcript)
      Calls: call-1 through call-{N}
@@ -599,7 +599,7 @@ reports partial progress and can be re-checked later.
 When all agents have finished, the evaluator writes:
 
 ```
-[{ISO 8601 timestamp}] [v2.0.0] [stage-1:complete] [{Short Name}]
+[{ISO 8601 timestamp}] [v2.1.0] [stage-1:complete] [{Short Name}]
   Status: COMPLETE
   Calls analyzed: {N} of {total in manifest}
   Successes: {count}

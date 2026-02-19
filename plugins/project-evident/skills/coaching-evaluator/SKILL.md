@@ -14,7 +14,7 @@ Lightweight utility for checking pipeline state and handling revisions.
 **For full pipeline runs: use `/run-pipeline {client}` or `/run-pipeline all`.**
 This skill does NOT run the pipeline. It checks status and processes revisions.
 
-**Plugin version: 2.0.0**
+**Plugin version: 2.1.0**
 
 ## Routing Logic
 
@@ -70,7 +70,7 @@ SCRIPTS = ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/scripts/
    | STAGE_1_DONE | All evaluations match manifest | "Stage 1 complete. Run `/run-pipeline {client}` to continue" |
    | POPULATING | essentials-review.md missing, log shows Populating Fields | "Stage 2 in progress" |
    | STAGE_2_DONE | essentials-review.md exists | "Stage 2 complete" |
-   | PUSHED | Log shows PUSHED_TO_NOTION | "Pushed to Notion" |
+   | PUSHED | Log shows PUSHED_TO_DOCUMENT | "Pushed to Notion. Tim pushes to Google Doc manually." |
    | FAILED | FAILED entry in log | Show error, suggest fix |
 
 5. Report:

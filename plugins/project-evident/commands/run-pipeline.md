@@ -93,7 +93,9 @@ Task(
 
     1. Update status: 'Analyzing Calls'
     2. Read the coaching-call-analyzer SKILL.md from disk NOW.
-    3. For EACH call in manifest.json, spawn a background subagent:
+    3. Re-read endpoint-map and simon-criteria reference files from disk NOW
+       (context compression may have dropped them since pipeline start).
+    4. For EACH call in manifest.json, spawn a background subagent:
        - Launch ALL subagents in a SINGLE message (parallel execution)
        - Each uses run_in_background: true
        - Each analyzes ONE transcript and writes ONE evaluation file
@@ -143,7 +145,7 @@ Task(
     ## STAGE FINAL: Mark Essentials Complete
     1. Update status: 'Pushed To Document'
     2. Log to pipeline.log:
-       [{timestamp}] [v2.0.0] [pipeline:essentials-complete] [{client}]
+       [{timestamp}] [v2.1.0] [pipeline:essentials-complete] [{client}]
          Status: PUSHED_TO_DOCUMENT
          Quality gate: {N}/7
          Fields pushed: {count}
@@ -172,7 +174,7 @@ Task(
        If summary exceeds 2000 chars, split into multiple rich_text array elements
        at sentence boundaries.
     7. Log to pipeline.log:
-       [{timestamp}] [v2.0.0] [stage-4:simon-summary] [{client}]
+       [{timestamp}] [v2.1.0] [stage-4:simon-summary] [{client}]
          Status: SUCCESS
          Output: 4-summary/simon-summary.md
          Target: Client page {client_page_id} -> 'Simon Summary' property

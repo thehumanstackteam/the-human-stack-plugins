@@ -13,7 +13,7 @@ Reads evaluation files from `2-evaluations/` → maps content to 50 Notion field
 endpoint-map.md → validates against Simon's 7 Essential Elements → writes
 `3-essentials/essentials-review.md` for Tim's review → appends to pipeline.log.
 
-**Plugin version: 2.0.0**
+**Plugin version: 2.1.0**
 
 **Invocation required:** This output must be produced by invoking this skill or
 by the orchestrator reading this file from disk before running Stage 2. Do not
@@ -25,9 +25,10 @@ in conversation, invoke `/project-evident:essentials-populator` or `/run-pipelin
 - Notion MCP connector (for supplementary transcript pulls only -- NOT the primary source).
 - Reference files needed (endpoint-map.md, simon-criteria.md, org-mapping.md).
 
-**When running as a background subagent:** The caller embeds reference file content
-directly in the prompt. Do NOT try to read from `${CLAUDE_PLUGIN_ROOT}` -- background
-agents do not have access to plugin files. Use the reference content provided in the prompt.
+**When running as the orchestrator's Stage 2:** Read reference files from the repo
+path (`~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/skills/coaching-call-analyzer/references/`).
+Re-read them even if the orchestrator read them earlier -- context compression may
+have dropped them.
 
 **When running in the main agent:** Load these reference files directly:
   - `references/org-mapping.md` -- client page IDs, essentials page IDs, folder names
@@ -38,7 +39,7 @@ agents do not have access to plugin files. Use the reference content provided in
 
 ```
 ARTIFACT_ROOT = ~/Dev/claude-cowork/Clients/Project Evident Updates
-PLUGIN_VERSION = 2.0.0
+PLUGIN_VERSION = 2.1.0
 ```
 
 ## Step 0: Resolve Client and Validate
@@ -335,7 +336,7 @@ essentials_page_id: {from org-mapping / validated from evaluations}
 source_evaluations:
   - 2-evaluations/call-1-evaluation.md
   - 2-evaluations/call-2-evaluation.md
-plugin_version: 2.0.0
+plugin_version: 2.1.0
 created_at: {ISO 8601 timestamp}
 ---
 
@@ -536,7 +537,7 @@ saves, then tells the evaluator to push. No special formatting beyond markdown t
 Append to `{ARTIFACT_ROOT}/{folder_name}/pipeline.log`:
 
 ```
-[{ISO 8601 timestamp}] [v2.0.0] [stage-2:essentials-populator] [{Short Name}]
+[{ISO 8601 timestamp}] [v2.1.0] [stage-2:essentials-populator] [{Short Name}]
   Status: SUCCESS
   Input: 2-evaluations/call-1-evaluation.md, call-2-evaluation.md
   Output: 3-essentials/essentials-review.md
@@ -545,7 +546,7 @@ Append to `{ARTIFACT_ROOT}/{folder_name}/pipeline.log`:
 
 Or on failure:
 ```
-[{ISO 8601 timestamp}] [v2.0.0] [stage-2:essentials-populator] [{Short Name}]
+[{ISO 8601 timestamp}] [v2.1.0] [stage-2:essentials-populator] [{Short Name}]
   Status: FAILED
   Error: {what went wrong}
 ```
