@@ -14,7 +14,7 @@ Lightweight utility for checking pipeline state and handling revisions.
 **For full pipeline runs: use `/run-pipeline {client}` or `/run-pipeline all`.**
 This skill does NOT run the pipeline. It checks status and processes revisions.
 
-**Plugin version: 1.3.0**
+**Plugin version: 2.0.0**
 
 ## Routing Logic
 

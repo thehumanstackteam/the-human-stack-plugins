@@ -143,7 +143,7 @@ Task(
     ## STAGE FINAL: Mark Essentials Complete
     1. Update status: 'Pushed To Document'
     2. Log to pipeline.log:
-       [{timestamp}] [v1.3.0] [pipeline:essentials-complete] [{client}]
+       [{timestamp}] [v2.0.0] [pipeline:essentials-complete] [{client}]
          Status: PUSHED_TO_DOCUMENT
          Quality gate: {N}/7
          Fields pushed: {count}
@@ -172,7 +172,7 @@ Task(
        If summary exceeds 2000 chars, split into multiple rich_text array elements
        at sentence boundaries.
     7. Log to pipeline.log:
-       [{timestamp}] [v1.3.0] [stage-4:simon-summary] [{client}]
+       [{timestamp}] [v2.0.0] [stage-4:simon-summary] [{client}]
          Status: SUCCESS
          Output: 4-summary/simon-summary.md
          Target: Client page {client_page_id} -> 'Simon Summary' property
