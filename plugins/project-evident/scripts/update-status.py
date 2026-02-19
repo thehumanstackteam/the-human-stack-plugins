@@ -19,7 +19,9 @@ Requires: NOTION_API_KEY env var
 
 import json
 import os
+import re
 import sys
+from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
@@ -87,6 +89,23 @@ def update_status(token, page_id, status):
         return False
 
 
+MANIFEST_PATH = Path.home() / "Dev" / "claude-cowork" / "Clients" / "Project Evident Updates" / "pipeline-manifest.md"
+
+
+def update_manifest(client_name, status):
+    """Update the client's row in pipeline-manifest.md to match the new status."""
+    if not MANIFEST_PATH.exists():
+        return
+    text = MANIFEST_PATH.read_text()
+    # Match table rows like: | 2 | Building Promise | -- | pending |
+    pattern = rf"(\|\s*\d+\s*\|\s*{re.escape(client_name)}\s*\|)\s*[^|]*\|([^|]*\|)"
+    match = re.search(pattern, text)
+    if match:
+        new_row = f"{match.group(1)} {status} |{match.group(2)}"
+        text = text[:match.start()] + new_row + text[match.end():]
+        MANIFEST_PATH.write_text(text)
+
+
 def main():
     if len(sys.argv) < 3:
         print("Usage: python3 update-status.py <client> <status>")
@@ -115,6 +134,7 @@ def main():
     token = get_token()
 
     if update_status(token, page_id, status):
+        update_manifest(client_arg, status)
         print(f"OK: {client_arg} -> {status}")
     else:
         print(f"FAILED: {client_arg} -> {status}", file=sys.stderr)
