@@ -1,0 +1,375 @@
+---
+name: essentials-populator
+description: >
+  Stage 2 of the Project Evident pipeline. Reads evaluation files from the client's
+  Working Files folder, maps content to 50 Essentials fields using the endpoint map,
+  validates against Simon's 7 Essential Elements, and writes essentials-review.md for
+  HITL review. Use for "populate essentials", "fill endpoints", "run stage 2 for [client]".
+---
+
+# Essentials Populator (Stage 2)
+
+Reads evaluation files from `2-evaluations/` → maps content to 50 Notion fields using
+endpoint-map.md → validates against Simon's 7 Essential Elements → writes
+`3-essentials/essentials-review.md` for Tim's review → appends to pipeline.log.
+
+**Plugin version: 1.0.0**
+
+## Prerequisites
+
+- Notion MCP connector (for supplementary transcript pulls only — NOT the primary source).
+- Load these reference files BEFORE starting:
+  - `references/org-mapping.md` — client page IDs, essentials page IDs, folder names
+  - `references/endpoint-map.md` — exact Notion property names and types (all 50 fields)
+  - `references/simon-criteria.md` — the 7 Essential Elements quality gate
+
+## Constants
+
+```
+ARTIFACT_ROOT = ~/Dev/claude-cowork/Clients/Project Evident Updates
+PLUGIN_VERSION = 1.0.0
+```
+
+## Step 0: Resolve Client and Validate
+
+1. Match the client name/shortname to org-mapping.md.
+2. Extract `client_page_id`, `essentials_page_id`, and `folder_name`.
+3. **HALT if either ID is missing.**
+
+4. Set working directory: `{ARTIFACT_ROOT}/{folder_name}/`
+
+## Step 1: Load Evaluation Files
+
+1. Glob `{working_dir}/2-evaluations/call-*-evaluation.md` to find all evaluation files.
+
+2. **If zero files found → HALT.** Report:
+   "No evaluation files found in `{working_dir}/2-evaluations/`. Run Stage 1 first:
+   `/analyze-call {client}`"
+
+3. For each evaluation file, read YAML frontmatter and extract:
+   - `client_page_id`
+   - `essentials_page_id`
+   - `transcript_page_id`
+   - `session` number
+   - `date`
+
+4. **Validate ID consistency:**
+   - All files must have the same `client_page_id` — if not, HALT with mismatch error
+   - All files must have the same `essentials_page_id` — if not, HALT with mismatch error
+   - `essentials_page_id` MUST match what's in org-mapping.md — if not, HALT
+   - Every file must have a non-empty `transcript_page_id` — warn if missing but don't halt
+
+5. Read the full body of each evaluation file. The evaluations contain:
+   - Attribution logs (who said what, weight, component mapping)
+   - Full cluster text for short clusters, rich summaries for long ones
+   - Component-level evaluation with Essential Elements scorecard
+
+## Step 2: Map Content to 50 Fields
+
+Use the evaluation content to populate each field per endpoint-map.md. The mapping
+is mostly mechanical — the analytical work was done in Stage 1.
+
+**Framing:**
+> "This was an emergent process — the client found tools first, then discovered
+> what problems the tools solved. Highlight the ways this client succeeded with AI."
+
+### How to Write Each Field Type
+
+**Checkbox fields** (e.g., C3P1T1F1: AI Tools Purchase Checked):
+Check ✓ if the attribution log shows the client took action — purchased, configured,
+used, tested. Don't check based on discussion alone.
+
+**Owner fields** (e.g., C3P1T1F3: Owner for AI Tools Purchase):
+Named person from the attribution log. "Maria Rodriguez, Intake Coordinator" —
+not "staff" or "the team."
+
+**Description fields** (e.g., C4P2T2F2: Description of Productivity Gains):
+The narrative of what changed. Synthesizes across sessions. Reads well in a
+funder-facing document. This is what goes in the Google Doc.
+
+Write it so a reader who knows nothing about the coaching sessions understands
+what happened and why it matters.
+
+Example:
+> "Staff save approximately 2 hours per newsletter using AI-assisted drafting
+> through Promptinator, freeing capacity for direct client programming. The tool
+> handles first-draft generation from bullet points, reducing the writing cycle
+> from 3 hours to under 1 hour per piece."
+
+Not:
+> "Productivity gains were observed in newsletter production."
+
+**Evidence fields** (e.g., C4P2T2F3: Evidence of Productivity Gains):
+The specific, verifiable facts that back the Description. Who did what, what the
+numbers are, what was directly observed. Written clearly — no internal tags, no
+session numbers, no classification labels.
+
+Evidence answers: "How do we know the Description is true?"
+
+Example:
+> "Sanders calculated 2 hours saved per newsletter at $65/hr staff rate ($130/article).
+> Staff began using Promptinator independently between coaching sessions without
+> additional training. Three newsletters produced using AI-assisted workflow in
+> January with no quality complaints from readers."
+
+Not:
+> "Measured (Session 2): Sanders and Tim calculated 2 hrs/article. Observed
+> (Session 3): Staff adopted tool."
+
+**The rule:** Description and Evidence must never say the same thing. If they do,
+one of them is wrong. Description = what happened. Evidence = the specific
+observations, measurements, and actions that prove it happened.
+
+**Progress Indicator fields** (e.g., C3P1T1F4: Progress Indicators for AI Tools Purchase):
+Concrete metrics of what happened. Hours saved, tasks automated, adoption rate.
+Same standard as Evidence — specific and verifiable.
+
+**Before/After fields** (C4P1F1, C4P1F2):
+Describe the actual workflow steps, not feelings. "Before" should read like a
+process document for the old way. "After" should read like a process document
+for the new way.
+
+**Narrative fields** (Coaching Notes, Aha Moments):
+Coaching Notes = summary of the coaching arc. What the client figured out, how
+they got there, what the coach contributed.
+Aha Moments = the specific moments when something clicked. Named person, what
+they realized, why it mattered.
+
+### Value Calculations
+
+When the attribution log contains time/cost data, calculate:
+1. Find the unit (hours per task)
+2. Find frequency (weekly, monthly)
+3. Annualize (units × frequency × 52 or 12)
+4. Apply rate: Staff $65/hr, ED $100/hr, Consultant $200/hr
+5. State in Description: "saving approximately $6,760/year in staff time"
+6. State in Evidence: "Sanders calculated 2 hrs/newsletter × 52 weeks × $65/hr"
+
+Only calculate meaningful savings. Paper reduction is values alignment, not financial.
+
+### What Never Goes in Any Field
+
+- Internal classification tags (Measured, Stated, Observed, etc.)
+- Session numbers or dates
+- Attribution log codes
+- Coach frameworks attributed to the client
+- Polite acknowledgments treated as adoption
+- Marketing copy where observations should be
+- Anything that sounds plausible but wasn't in the transcript
+
+## Step 3: Supplementary Transcript Pull (If Needed)
+
+If the evaluations have significant gaps in any component area, fetch transcripts
+directly from Notion for targeted extraction. Never load more than 2-3 transcripts.
+
+Any new transcripts fetched get saved to `1-transcripts/` with proper frontmatter
+(same format as Stage 1).
+
+## Step 4: Write essentials-review.md
+
+**File:** `{ARTIFACT_ROOT}/{folder_name}/3-essentials/essentials-review.md`
+
+```markdown
+---
+client: {Short Name}
+client_page_id: {from org-mapping / validated from evaluations}
+essentials_page_id: {from org-mapping / validated from evaluations}
+source_evaluations:
+  - 2-evaluations/call-1-evaluation.md
+  - 2-evaluations/call-2-evaluation.md
+plugin_version: 1.0.0
+created_at: {ISO 8601 timestamp}
+---
+
+# Essentials Review: {Org Full Name}
+
+**Status:** Ready for Tim's review. Edit any values below, then tell the evaluator to push.
+
+## Component 1: Pain Point & AI Solution
+
+| Field | Value |
+|-------|-------|
+| C1P1T1: Pain Point | {value or blank} |
+| C1P1T2: Current Impact | {value or blank} |
+| C1P2: Reviewed AI Solutions and Tools | {value or blank} |
+
+## Component 2: Policy/Guidelines
+
+| Field | Value |
+|-------|-------|
+| C2T1F1: Policy Document Link | {url or blank} |
+| C2T1F2: Policy Notes | {value or blank} |
+
+## Component 3: Execution — Phase 1: Foundation & Setup
+
+| Field | Value |
+|-------|-------|
+| C3P1T1F1: AI Tools Purchase Checked | ✓ or ✗ |
+| C3P1T1F2: Description of AI Tools Purchase | {value} |
+| C3P1T1F3: Owner for AI Tools Purchase | {value} |
+| C3P1T1F4: Progress Indicators for AI Tools Purchase | {value} |
+| C3P1T2F1: Data Identified Checked | ✓ or ✗ |
+| C3P1T2F2: Description of Data Identified and Readiness | {value} |
+| C3P1T2F3: Owner for Data Identification | {value} |
+| C3P1T2F4: Progress Indicators for Data Readiness | {value} |
+| C3P1T3F1: Technology Integration Complete Checked | ✓ or ✗ |
+| C3P1T3F2: Description of Technology Integration | {value} |
+| C3P1T3F3: Owner for Technology Integration | {value} |
+| C3P1T3F4: Progress Indicators for Technology Integration | {value} |
+
+## Component 3: Execution — Phase 2: Testing & Training
+
+| Field | Value |
+|-------|-------|
+| C3P2T1F1: Small Scale Test Run Checked | ✓ or ✗ |
+| C3P2T1F2: Description of Small Scale Test | {value} |
+| C3P2T1F3: Owner for Small Scale Test | {value} |
+| C3P2T1F4: Progress Indicators for Small Scale Test | {value} |
+
+## Component 3: Execution — Phase 3: Launch & Rollout
+
+| Field | Value |
+|-------|-------|
+| C3P3T1F1: Wider Rollout Checked | ✓ or ✗ |
+| C3P3T1F2: Description of Wider Rollout | {value} |
+| C3P3T1F3: Owner for Wider Rollout | {value} |
+| C3P3T1F4: Progress Indicators for Wider Rollout | {value} |
+
+## Component 4: Progress Monitoring — Before/After
+
+| Field | Value |
+|-------|-------|
+| C4P1F1: Before AI | {value} |
+| C4P1F2: After AI | {value} |
+
+## Component 4: Progress Monitoring — Cost Savings
+
+| Field | Value |
+|-------|-------|
+| C4P2T1F1: Cost Savings Checked | ✓ or ✗ |
+| C4P2T1F2: Description of Cost Savings | {value} |
+| C4P2T1F3: Evidence of Cost Savings | {value} |
+
+## Component 4: Progress Monitoring — Productivity Gains
+
+| Field | Value |
+|-------|-------|
+| C4P2T2F1: Productivity Gains Checked | ✓ or ✗ |
+| C4P2T2F2: Description of Productivity Gains | {value} |
+| C4P2T2F3: Evidence of Productivity Gains | {value} |
+
+## Component 4: Progress Monitoring — Policy Changes
+
+| Field | Value |
+|-------|-------|
+| C4P2T3F1: Policy Changes Checked | ✓ or ✗ |
+| C4P2T3F2: Description of Policy Changes | {value} |
+| C4P2T3F3: Evidence of Policy Changes | {value} |
+
+## Component 4: Progress Monitoring — Service Delivery
+
+| Field | Value |
+|-------|-------|
+| C4P2T4F1: Service Delivery Improvements Checked | ✓ or ✗ |
+| C4P2T4F2: Description of Service Delivery Improvements | {value} |
+| C4P2T4F3: Evidence of Service Delivery Improvements | {value} |
+
+## Component 4: Progress Monitoring — Outcomes
+
+| Field | Value |
+|-------|-------|
+| C4P2T5F1: Outcomes Improved Checked | ✓ or ✗ |
+| C4P2T5F2: Description of Outcomes Improved | {value} |
+| C4P2T5F3: Evidence of Outcomes Improved | {value} |
+
+## Component 4: Progress Monitoring — Funding
+
+| Field | Value |
+|-------|-------|
+| C4P2T6F1: Increased Funding Checked | ✓ or ✗ |
+| C4P2T6F2: Description of Increased Funding | {value} |
+| C4P2T6F3: Evidence of Increased Funding | {value} |
+
+## Component 4: Progress Monitoring — Other Changes
+
+| Field | Value |
+|-------|-------|
+| C4P2T7F1: Other Changes Checked | ✓ or ✗ |
+| C4P2T7F2: Description of Other Changes | {value} |
+| C4P2T7F3: Evidence of Other Changes | {value} |
+
+## Narrative
+
+| Field | Value |
+|-------|-------|
+| Coaching Notes | {value} |
+| Aha Moments | {value} |
+
+---
+
+## Essential Elements Quality Gate
+
+Element              | Verdict     | What's in the fields
+AI Tech              | {✓/⚠/✗}   | {content or gap}
+Personnel            | {✓/⚠/✗}   | {content or gap}
+Data                 | {✓/⚠/✗}   | {content or gap}
+Pre-AI Workflow      | {✓/⚠/✗}   | {content or gap}
+Post-AI Workflow     | {✓/⚠/✗}   | {content or gap}
+Quantitative Impact  | {✓/⚠/✗}   | {content or gap}
+Qualitative Impact   | {✓/⚠/✗}   | {content or gap}
+
+**Result:** {#}/7 passing | {Ready / Needs work}
+
+{If all 7 pass, generate summary sentence per simon-criteria.md template}
+
+{If gaps exist: which field needs it, which transcript likely has it}
+```
+
+**All 50 fields must appear.** Blank fields shown as blank, not omitted.
+Checkbox fields show ✓ or ✗.
+
+**The file must be human-editable.** Tim opens this in a text editor, changes values,
+saves, then tells the evaluator to push. No special formatting beyond markdown tables.
+
+## Step 5: Append to Pipeline Log
+
+Append to `{ARTIFACT_ROOT}/{folder_name}/pipeline.log`:
+
+```
+[{ISO 8601 timestamp}] [v1.0.0] [stage-2:essentials-populator] [{Short Name}]
+  Status: SUCCESS
+  Input: 2-evaluations/call-1-evaluation.md, call-2-evaluation.md
+  Output: 3-essentials/essentials-review.md
+  Quality gate: {#}/7 pass, {#} vague ({which elements}), {#} missing ({which elements})
+```
+
+Or on failure:
+```
+[{ISO 8601 timestamp}] [v1.0.0] [stage-2:essentials-populator] [{Short Name}]
+  Status: FAILED
+  Error: {what went wrong}
+```
+
+## Step 6: Report to User
+
+Present:
+- Which evaluation files were consumed
+- Quality gate results (7 elements)
+- Summary sentence if all 7 pass
+- Gaps and which transcript to target
+- File path: "Review file ready at `{path}/3-essentials/essentials-review.md`"
+- Next step: "Edit the file if needed, then tell the evaluator to push to Notion."
+
+## What This Skill Produces
+
+- `3-essentials/essentials-review.md` — human-readable, editable HITL document with
+  all 50 fields, quality gate, and YAML frontmatter with Notion IDs
+- Appended entry in `pipeline.log`
+
+## What This Skill Does NOT Do
+
+- Write to Notion (that's Stage 3: evaluator, after Tim approves)
+- Analyze raw transcripts from scratch (use Stage 1: call-analyzer)
+- Update component statuses on the Client Page
+- Generate the Google Doc (use the Essentials DB button)
+- Generate essentials-payload.json (that's Stage 3 after HITL approval)

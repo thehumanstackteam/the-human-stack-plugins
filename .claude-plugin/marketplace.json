@@ -110,6 +110,14 @@
       "author": { "name": "Anthropic" },
       "source": "./plugins/cowork-plugin-management",
       "category": "productivity"
+    },
+    {
+      "name": "project-evident",
+      "description": "3-stage pipeline for Project Evident coaching: analyze call transcripts, map evaluations to 50 Essentials fields with HITL review, and push validated results to Notion.",
+      "version": "1.0.0",
+      "author": { "name": "The Human Stack" },
+      "source": "./plugins/project-evident",
+      "category": "productivity"
     }
   ]
 }
