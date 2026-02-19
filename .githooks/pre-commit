@@ -1,0 +1,14 @@
+#!/bin/bash
+# Pre-commit hook: sync plugin versions into marketplace.json
+# If any versions are out of sync, auto-fix and add to the commit.
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+python3 "$REPO_ROOT/scripts/sync-versions.py"
+if [ $? -eq 0 ]; then
+    exit 0
+fi
+
+# If sync made changes, stage them
+git add "$REPO_ROOT/.claude-plugin/marketplace.json"
+echo "marketplace.json updated and staged."
