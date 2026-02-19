@@ -108,8 +108,10 @@ itself -- it's why that tool works for how they actually operate. A phone
 camera capturing handwritten forms at field events is a better story than
 "they used Gemini." The phone was already in their pocket, volunteers don't
 need training on cameras, and it solves the constraint (no laptops at event
-tables). That's implementation thinking worth highlighting in Description
-and Evidence fields.
+tables). When the client realizes what they already have in their pocket can
+do something they thought required expensive systems -- that's an aha moment.
+Capture that realization in the narrative. That's implementation thinking
+worth highlighting in Description, Evidence, and Aha Moments fields.
 
 ### How to Write Each Field Type
 
