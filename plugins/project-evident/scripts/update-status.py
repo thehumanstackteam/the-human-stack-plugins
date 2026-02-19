@@ -34,6 +34,7 @@ VALID_STATUSES = [
     "Quality Gate",
     "Pushing to Notion",
     "Pushed To Document",
+    "Writing Summary",
     "Revise",
     "Waiting for Review",
 ]

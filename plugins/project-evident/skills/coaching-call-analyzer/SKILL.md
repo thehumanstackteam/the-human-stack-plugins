@@ -354,7 +354,7 @@ Task(
     | C1P1: Pain Point | Specific operational challenge, quantified impact, team alignment |
     | C1P2: AI Solution | Tools discussed/selected, cost/fit considerations |
     | C2: Policy | AI governance/responsible use policy ONLY (see below) |
-    | C3P1: Foundation | Tools chosen/signed up for, data sources identified, basic setup done |
+    | C3P1: Foundation | Have the right tools (free counts), data sources identified, basic setup done |
     | C3P2: Testing | Someone tried it on a real task, got results, learned what works |
     | C3P3: Rollout | Others on the team started using it, becoming part of how work gets done |
     | C4: Progress | Before/after comparisons, savings, productivity, outcomes |

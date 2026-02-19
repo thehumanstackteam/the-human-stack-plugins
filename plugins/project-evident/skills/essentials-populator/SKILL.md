@@ -83,8 +83,10 @@ is mostly mechanical — the analytical work was done in Stage 1.
 $5M) using accessible, user-appropriate tools effectively. The implementation
 components (C3) must be evaluated at the right scale:
 
-- **"AI Tools Purchase"** = signed up for ChatGPT, started using Google Gemini,
-  adopted the Promptinator. Not enterprise procurement. A free account counts.
+- **"AI Tools Purchase"** = have the right tools and are using them. The word
+  "purchase" is misleading -- this is really "do they have appropriate AI tools?"
+  Signed up for free ChatGPT, using Google Gemini, adopted the Promptinator --
+  all count. Nothing needs to be bought. If they have tools and use them: ✅.
 - **"Data Identified"** = figured out which spreadsheet, database export, or
   existing system holds the data they need. Not a data warehouse.
 - **"Technology Integration"** = got the tool working with their actual workflow.

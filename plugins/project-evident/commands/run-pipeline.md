@@ -19,7 +19,8 @@ power after the fact.
 | Populating Fields | 2 | Mapping evaluations to 50 fields |
 | Quality Gate | 2.5 | Checking 7/7 elements. Auto-retry if fail |
 | Pushing to Notion | 3 | Writing fields + page body to Essentials page |
-| Pushed To Document | Final | Complete. Tim reviews in Notion |
+| Pushed To Document | 3-done | Essentials pushed. Moving to Simon Summary |
+| Writing Summary | 4 | Generating funder-ready summary for Client page |
 | Revise | Veto | Tim left comments on the Essentials page. Agent reads and fixes |
 | Waiting for Review | Post-veto | Revision done, awaiting Tim's check |
 
@@ -111,16 +112,47 @@ Task(
     3. Verify push succeeded (check exit code)
     4. Log to pipeline.log
 
-    ## STAGE FINAL: Mark Complete
+    ## STAGE FINAL: Mark Essentials Complete
     1. Update status: 'Pushed To Document'
-    2. Log final entry to pipeline.log:
-       [{timestamp}] [v1.1.0] [pipeline:complete] [{client}]
+    2. Log to pipeline.log:
+       [{timestamp}] [v1.2.0] [pipeline:essentials-complete] [{client}]
          Status: PUSHED_TO_DOCUMENT
          Quality gate: {N}/7
          Fields pushed: {count}
          Essentials page: {essentials_page_id}
 
-    Return: summary of all stages, quality gate results, any gaps flagged.
+    ## STAGE 4: Simon Summary
+    Write the funder-ready summary sentence to the Client page.
+    Skip if 4-summary/simon-summary.md already exists.
+
+    1. Read 3-essentials/essentials-review.md
+    2. Follow the simon-summary methodology (7-step process):
+       - Start with Simon's 6 characteristics (AI tech, personnel, data, pre-AI
+         workflow, post-AI workflow, impact)
+       - The meta-task: give Simon a sentence he can drop into a funder report
+         without editing
+       - Read through the funder lens ("what can Simon report")
+       - Extract reportable specifics (titles not names, volume, time, qualitative shift)
+       - Don't assume the story is weaker than it is -- count actual steps
+       - Write as narrative prose (case study, not checklist)
+       - Test: could Simon paste this with zero edits?
+    3. Write to {ARTIFACT_ROOT}/{folder_name}/4-summary/simon-summary.md
+    4. Push the summary to the "Simon Summary" rich_text property on the Client page
+       (client_page_id, NOT essentials_page_id):
+       export NOTION_API_KEY=$(op item get 'Notion Token' --vault 'MCP Tokens' --fields credential --reveal 2>/dev/null)
+       Use Notion API PATCH to /pages/{client_page_id} with:
+       {"properties": {"Simon Summary": {"rich_text": [{"text": {"content": "{summary}"}}]}}}
+       If summary exceeds 2000 chars, split into multiple rich_text array elements
+       at sentence boundaries.
+    5. Log to pipeline.log:
+       [{timestamp}] [v1.2.0] [stage-4:simon-summary] [{client}]
+         Status: SUCCESS
+         Output: 4-summary/simon-summary.md
+         Target: Client page {client_page_id} -> "Simon Summary" property
+         Characteristics: {N}/6 present
+         Length: {char count}
+
+    Return: summary of all stages, quality gate results, simon summary preview.
 
     ## Reference: Org Mapping
     {org_mapping content}
@@ -134,7 +166,7 @@ Task(
 ```
 
 5. **Tell the user immediately:**
-   "Pipeline launched for {client} in background. It will run 1A -> 1B -> 2 -> push
+   "Pipeline launched for {client} in background. It will run 1A -> 1B -> 2 -> push -> simon summary
    autonomously. Watch the Status field on the Essentials page in Notion for live progress.
 
    Check pipeline.log for details.
