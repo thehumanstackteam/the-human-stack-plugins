@@ -72,7 +72,7 @@ def update_status(token, page_id, status):
     body = {
         "properties": {
             STATUS_PROPERTY: {
-                "select": {"name": status}
+                "status": {"name": status}
             }
         }
     }
