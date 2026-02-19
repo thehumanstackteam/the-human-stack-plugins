@@ -102,6 +102,15 @@ Do not undersell small-org adoption by comparing it to enterprise standards.
 A 6-person org where 3 people independently use AI for their work has achieved
 50% adoption -- that's remarkable. Write it that way.
 
+**Tool-constraint fit:** When the client chose a tool because it matches their
+operational reality, call that out. The implementation insight isn't the tool
+itself -- it's why that tool works for how they actually operate. A phone
+camera capturing handwritten forms at field events is a better story than
+"they used Gemini." The phone was already in their pocket, volunteers don't
+need training on cameras, and it solves the constraint (no laptops at event
+tables). That's implementation thinking worth highlighting in Description
+and Evidence fields.
+
 ### How to Write Each Field Type
 
 **Checkbox fields** (e.g., C3P1T1F1: AI Tools Purchase Checked):
