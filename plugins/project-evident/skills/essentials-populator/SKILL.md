@@ -79,11 +79,34 @@ is mostly mechanical — the analytical work was done in Stage 1.
 > "This was an emergent process — the client found tools first, then discovered
 > what problems the tools solved. Highlight the ways this client succeeded with AI."
 
+**Right-sizing context:** These are small nonprofits (5-30 staff, budgets under
+$5M) using accessible, user-appropriate tools effectively. The implementation
+components (C3) must be evaluated at the right scale:
+
+- **"AI Tools Purchase"** = signed up for ChatGPT, started using Google Gemini,
+  adopted the Promptinator. Not enterprise procurement. A free account counts.
+- **"Data Identified"** = figured out which spreadsheet, database export, or
+  existing system holds the data they need. Not a data warehouse.
+- **"Technology Integration"** = got the tool working with their actual workflow.
+  Could mean learning to paste data into a prompt, connecting a Zapier, or
+  exporting from Salesforce to upload to Gemini. Not API integrations.
+- **"Small Scale Test"** = one person tried it on one real task and it worked
+  (or didn't). A Deputy Director drafting one newsletter with AI is a test.
+- **"Wider Rollout"** = other staff started using it too, or it became the
+  normal way the task gets done. Three people using Promptinator independently
+  IS a rollout at this scale.
+
+Do not undersell small-org adoption by comparing it to enterprise standards.
+A 6-person org where 3 people independently use AI for their work has achieved
+50% adoption -- that's remarkable. Write it that way.
+
 ### How to Write Each Field Type
 
 **Checkbox fields** (e.g., C3P1T1F1: AI Tools Purchase Checked):
-Use ✅ if the attribution log shows the client took action — purchased, configured,
-used, tested. Use 🚫 if not. Don't check based on discussion alone.
+Use ✅ if the attribution log shows the client took action -- signed up, started
+using, configured, tested, adopted. Use 🚫 if not. Don't check based on
+discussion alone. "We've been using ChatGPT" = ✅. "We talked about maybe
+trying ChatGPT" = 🚫.
 
 **Owner fields** (e.g., C3P1T1F3: Owner for AI Tools Purchase):
 Named person from the attribution log. "Maria Rodriguez, Intake Coordinator" —

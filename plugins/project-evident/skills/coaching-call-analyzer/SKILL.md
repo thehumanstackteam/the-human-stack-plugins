@@ -335,6 +335,18 @@ Task(
     - Team impact: \"my staff\" / \"everyone\" / \"we've been using it\"
 
     ### Component-Level Evaluation
+
+    **Right-sizing context:** These are small nonprofits (5-30 staff, budgets under
+    $5M) using accessible tools effectively -- not enterprise IT deployments.
+    "Tools purchased" might mean signing up for ChatGPT or Google Gemini. "Data
+    identified" might mean exporting a CSV from their existing system. "Technology
+    integration" might mean learning to copy-paste between tools or connecting a
+    Zapier. "Testing" might be one person trying AI on one real task. "Rollout"
+    might be 3 staff members using it independently. Evaluate what happened at the
+    scale it happened, not against an enterprise framework. A Deputy Director
+    using Promptinator to draft newsletters IS a successful implementation at this
+    scale.
+
     Evaluate each cluster against 7 component/phase buckets:
 
     | Bucket | What to Look For |
@@ -342,9 +354,9 @@ Task(
     | C1P1: Pain Point | Specific operational challenge, quantified impact, team alignment |
     | C1P2: AI Solution | Tools discussed/selected, cost/fit considerations |
     | C2: Policy | AI governance/responsible use policy ONLY (see below) |
-    | C3P1: Foundation | Tools purchased, data identified, integrations |
-    | C3P2: Testing | Pilot running, test results, training, feedback |
-    | C3P3: Rollout | Full team using it, system operational |
+    | C3P1: Foundation | Tools chosen/signed up for, data sources identified, basic setup done |
+    | C3P2: Testing | Someone tried it on a real task, got results, learned what works |
+    | C3P3: Rollout | Others on the team started using it, becoming part of how work gets done |
     | C4: Progress | Before/after comparisons, savings, productivity, outcomes |
 
     **C2 Policy -- critical distinction:**

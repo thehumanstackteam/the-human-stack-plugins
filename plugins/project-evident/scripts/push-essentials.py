@@ -171,7 +171,7 @@ def build_push_properties(values):
             continue  # Skip blanks
 
         if field_type == "checkbox":
-            is_checked = value.strip().upper() in ("__YES__", "YES", "TRUE", "1")
+            is_checked = value.strip().upper() in ("__YES__", "YES", "TRUE", "1") or value.strip() == "\u2705"
             props[field_name] = {"checkbox": is_checked}
         elif field_type == "url":
             url_val = value.strip()
