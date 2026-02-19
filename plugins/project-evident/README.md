@@ -23,7 +23,7 @@ Just tell it what you need:
 
 **Stage 1: Call Analyzer (background)** -- Phase A orchestrator fetches transcripts from Notion, filters, writes manifest. Phase B spawns one background agent per transcript for parallel analysis. Both phases run autonomously -- the conversation stays free.
 
-**Stage 2: Essentials Populator** -- reads evaluation files, maps to 50 Notion fields, validates against Simon's 7 Essential Elements, writes `essentials-review.md` for Tim's review.
+**Stage 2: Essentials Populator (background)** -- reads evaluation files, maps to 50 Notion fields, validates against Simon's 7 Essential Elements, writes `essentials-review.md` for Tim's review. Runs autonomously in background.
 
 **Stage 3: Evaluator/Router** -- reads pipeline log, validates state, manages HITL review, generates `essentials-payload.json`, pushes to Notion on approval.
 

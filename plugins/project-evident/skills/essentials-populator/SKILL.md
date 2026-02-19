@@ -13,21 +13,27 @@ Reads evaluation files from `2-evaluations/` → maps content to 50 Notion field
 endpoint-map.md → validates against Simon's 7 Essential Elements → writes
 `3-essentials/essentials-review.md` for Tim's review → appends to pipeline.log.
 
-**Plugin version: 1.0.0**
+**Plugin version: 1.1.0**
 
 ## Prerequisites
 
-- Notion MCP connector (for supplementary transcript pulls only — NOT the primary source).
-- Load these reference files BEFORE starting:
-  - `references/org-mapping.md` — client page IDs, essentials page IDs, folder names
-  - `references/endpoint-map.md` — exact Notion property names and types (all 50 fields)
-  - `references/simon-criteria.md` — the 7 Essential Elements quality gate
+- Notion MCP connector (for supplementary transcript pulls only -- NOT the primary source).
+- Reference files needed (endpoint-map.md, simon-criteria.md, org-mapping.md).
+
+**When running as a background subagent:** The caller embeds reference file content
+directly in the prompt. Do NOT try to read from `${CLAUDE_PLUGIN_ROOT}` -- background
+agents do not have access to plugin files. Use the reference content provided in the prompt.
+
+**When running in the main agent:** Load these reference files directly:
+  - `references/org-mapping.md` -- client page IDs, essentials page IDs, folder names
+  - `references/endpoint-map.md` -- exact Notion property names and types (all 50 fields)
+  - `references/simon-criteria.md` -- the 7 Essential Elements quality gate
 
 ## Constants
 
 ```
 ARTIFACT_ROOT = ~/Dev/claude-cowork/Clients/Project Evident Updates
-PLUGIN_VERSION = 1.0.0
+PLUGIN_VERSION = 1.1.0
 ```
 
 ## Step 0: Resolve Client and Validate

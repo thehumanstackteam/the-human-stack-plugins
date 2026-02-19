@@ -21,10 +21,14 @@ the filesystem before doing anything. It never assumes a prior stage succeeded.
 ## Prerequisites
 
 - Notion MCP connector (read + write via `update-page-properties`).
-- Load these reference files BEFORE routing:
+- Load these reference files BEFORE routing or spawning any background agents:
   - `references/org-mapping.md` -- client page IDs, essentials page IDs, folder names
   - `references/endpoint-map.md` -- exact Notion property names and types (all 50 fields)
   - `references/simon-criteria.md` -- the 7 Essential Elements quality gate
+
+**CRITICAL: Background agents cannot access plugin files.** Read all three reference
+files and embed their content directly in every subagent prompt. Do NOT tell subagents
+to read from `${CLAUDE_PLUGIN_ROOT}` -- they will not have permission.
 
 ## Constants
 
@@ -41,7 +45,7 @@ Parse the request and determine the workflow:
 |----------------|-------|
 | "process [client]" / "run pipeline" / "full run" | **Full pipeline**: validate -> analyze (background) -> populate -> HITL -> push |
 | "analyze call" / "new transcript" / "run stage 1" | **Stage 1 only**: validate -> dispatch call analyzer (background) |
-| "populate essentials" / "fill endpoints" / "run stage 2" | **Stage 2 only**: validate -> dispatch essentials populator |
+| "populate essentials" / "fill endpoints" / "run stage 2" | **Stage 2 only**: validate -> dispatch essentials populator (background) |
 | "push [client]" / "push to notion" / "approve" | **Push**: validate -> generate JSON -> push to Notion |
 | "status on [client]" / "where is [client]" | **Status check**: read log + filesystem, report state |
 | "batch" / "all clients" / "run everyone" | **Batch**: full pipeline for all 11 clients |
@@ -95,6 +99,7 @@ whether deeper work is needed.
    | STAGE_1_IN_PROGRESS | Some evaluations exist but fewer than manifest count | Wait -- background agents still running. Report progress. |
    | STAGE_1_PARTIAL | Evaluations < manifest AND no new log entries for 10+ min | Some agents may have failed. Offer to re-run missing calls. |
    | STAGE_1_DONE | All evaluations exist matching manifest | Run Stage 2 |
+   | STAGE_2_IN_PROGRESS | Stage 2 dispatched (log entry exists) but no essentials-review.md yet | Wait -- background agent running |
    | STAGE_2_DONE | Stage 2 SUCCESS in log + essentials-review.md exists | Present for HITL |
    | WAITING_FOR_HITL | WAITING_FOR_HITL in log | Wait for Tim |
    | PUSHED | PUSHED_TO_NOTION in log | Report done |
@@ -108,8 +113,8 @@ whether deeper work is needed.
    "Stage 1 launched in background for {client}. Phase A (retrieval) and Phase B
    (analysis) will run autonomously. Run `/evaluate-session status {client}` to
    check progress, or `/evaluate-session process {client}` again when ready to continue."
-4. If STAGE_1_DONE (all evaluations present) -> dispatch Stage 2 (foreground subagent).
-5. After Stage 2 -> validate `essentials-review.md` exists -> enter HITL loop.
+4. If STAGE_1_DONE (all evaluations present) -> dispatch Stage 2 (background subagent).
+5. When Stage 2 complete (`essentials-review.md` exists) -> enter HITL loop.
 6. HITL loop -> on approval -> generate JSON -> push to Notion.
 
 **Between each stage, re-read the filesystem.** Don't trust the subagent's report --
@@ -122,9 +127,15 @@ all evaluations are present, the pipeline continues to Stage 2.
 ## Route: Stage 1 Only
 
 1. Read state (Step 0).
-2. **Dispatch call analyzer as a background subagent:**
+2. **Read all reference files, then dispatch call analyzer as a background subagent
+   with reference content embedded:**
 
 ```
+# Read references first (main agent has plugin file access)
+org_mapping = Read("references/org-mapping.md")
+endpoint_map = Read("references/endpoint-map.md")
+simon_criteria = Read("references/simon-criteria.md")
+
 Task(
   subagent_type: "general-purpose",
   description: "Stage 1: Analyze {client} coaching calls",
@@ -143,11 +154,6 @@ Task(
     Essentials Page ID: {essentials_page_id}
     Folder: {ARTIFACT_ROOT}/{folder_name}/
 
-    ## Reference Files (read these first)
-    - {skill_directory}/references/org-mapping.md
-    - {skill_directory}/references/endpoint-map.md
-    - {skill_directory}/references/simon-criteria.md
-
     ## Instructions
     Follow the coaching-call-analyzer skill exactly:
     - Steps A0-A6: Retrieve, filter, write transcripts and manifest
@@ -155,12 +161,24 @@ Task(
       (run_in_background: true on each)
     - Step B2: Log the Phase B launch to pipeline.log and return
 
+    IMPORTANT: When spawning Phase B agents, embed the endpoint-map and simon-criteria
+    content in each agent's prompt. Background agents cannot read plugin files.
+
     Phase B agents run autonomously. Each writes its own evaluation file and
     pipeline.log entry. You do NOT wait for them to finish.
 
     Every file gets YAML frontmatter with client_page_id, essentials_page_id,
     transcript_page_id, and plugin_version: 1.1.0.
-    If any ID can't be resolved, HALT."
+    If any ID can't be resolved, HALT.
+
+    ## Reference: Org Mapping
+    {org_mapping content}
+
+    ## Reference: Endpoint Map
+    {endpoint_map content}
+
+    ## Reference: Simon Criteria
+    {simon_criteria content}"
 )
 ```
 
@@ -186,24 +204,49 @@ offer to re-run only the failed calls.
    "No evaluation files found. Run Stage 1 first: `/analyze-call {client}`"
 3. **If manifest exists**, check that evaluation count matches manifest count.
    If fewer evaluations than expected, warn Tim before proceeding.
-4. Dispatch essentials populator as subagent:
+4. **Read reference files, then dispatch essentials populator as a background subagent
+   with reference content embedded:**
 
 ```
+# Read references first (main agent has plugin file access)
+endpoint_map = Read("references/endpoint-map.md")
+simon_criteria = Read("references/simon-criteria.md")
+
 Task(
   subagent_type: "general-purpose",
-  description: "Populate essentials for {client}",
-  prompt: "Invoke the project-evident:essentials-populator skill.
+  description: "Stage 2: Populate essentials for {client}",
+  run_in_background: true,
+  prompt: "You are the Stage 2 essentials populator for Project Evident.
     Populate essentials for {Client Name}.
     Client page ID: {client_page_id}.
     Essentials page ID: {essentials_page_id}.
     Folder: {ARTIFACT_ROOT}/{folder_name}/
-    Run the full workflow: load evaluations from 2-evaluations/ -> map to 50 fields ->
-    write essentials-review.md -> validate against Simon's criteria -> log.
+
+    Run the full workflow:
+    - Glob 2-evaluations/call-*-evaluation.md to find all evaluation files
+    - Validate essentials_page_id is present and consistent across all files
+    - Map evaluation content to all 50 fields using the endpoint map below
+    - Calculate values using $65/hr staff, $100/hr ED, $200/hr consultant rates
+    - Write 3-essentials/essentials-review.md with YAML frontmatter
+    - Run Essential Elements quality gate using the simon criteria below
+    - Append SUCCESS or FAILED entry to pipeline.log
+
+    ## Reference: Endpoint Map
+    {endpoint_map content}
+
+    ## Reference: Simon Criteria
+    {simon_criteria content}
+
     Return: quality gate results, file path, any gaps."
 )
 ```
 
-4. After return: verify `3-essentials/essentials-review.md` exists. Report results.
+5. **Report to user immediately** (do not block):
+   - "Stage 2 launched for {client} in background."
+   - "Check progress: `/evaluate-session status {client}`"
+
+6. **When status is checked later**, verify `3-essentials/essentials-review.md` exists.
+   If it exists, Stage 2 is done. Report results.
 
 ## Route: Push to Notion
 
@@ -383,7 +426,7 @@ scope creep from efficiency goals
 ## What This Skill Produces
 
 - Pipeline state validation (reads log + filesystem + manifest)
-- Dispatches Stage 1 (background) and Stage 2 with validation between stages
+- Dispatches Stage 1 (background) and Stage 2 (background) with validation between stages
 - HITL review cycle management
 - `3-essentials/essentials-payload.json` -- the exact Notion push payload
 - Notion Essentials DB updates via `update-page-properties`

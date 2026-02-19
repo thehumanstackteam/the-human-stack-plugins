@@ -25,8 +25,6 @@ Follow the coaching-evaluator skill workflow:
 6. **Never push to Notion without Tim's explicit approval**
 7. **Generate `essentials-payload.json` before pushing** -- this is the single source of truth for what gets written to Notion
 
-**Stage 1 runs as autonomous background subagents.** When dispatching Stage 1, use `run_in_background: true` on the Phase A orchestrator. Phase A then spawns Phase B agents also in background. The main conversation stays free. Use status checks to monitor progress.
+**All stages run as autonomous background subagents.** When dispatching Stage 1 or Stage 2, use `run_in_background: true`. The main conversation stays free. Use status checks to monitor progress.
 
-**Stage 2 runs as a foreground subagent** (it needs to complete before HITL review).
-
-After any subagent (foreground or background), **verify the expected output files exist** before proceeding.
+After any background subagent completes, **verify the expected output files exist** before proceeding to the next stage.

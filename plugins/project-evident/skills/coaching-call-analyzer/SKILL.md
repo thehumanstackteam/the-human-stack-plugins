@@ -25,10 +25,16 @@ stays free for other work. Progress is tracked in `pipeline.log`.
 ## Prerequisites
 
 - Notion MCP connector for fetching coaching call pages.
-- Load these reference files BEFORE analysis:
+- Load these reference files BEFORE launching any background agents:
   - `references/org-mapping.md` -- client page IDs, essentials page IDs, folder names
   - `references/endpoint-map.md` -- the 50 Notion field names (know what you're extracting for)
   - `references/simon-criteria.md` -- the 7 Essential Elements quality gate
+
+**CRITICAL: Background agents cannot access plugin files.** The caller (main agent or
+command) MUST read all three reference files and embed their content directly in the
+subagent prompt. Do NOT tell subagents to read from `${CLAUDE_PLUGIN_ROOT}` -- they
+will not have permission. Instead, include the full text of each reference file in the
+prompt itself.
 
 ## Constants
 
@@ -46,7 +52,15 @@ metadata, filters, writes raw transcripts to disk, produces a manifest, and
 then spawns Phase B agents. It should NOT do any analysis itself.
 
 **Launch Pattern (from caller):**
+
+The caller reads all three reference files first, then embeds their content:
+
 ```
+# Caller reads these before spawning:
+org_mapping = Read("${CLAUDE_PLUGIN_ROOT}/skills/coaching-call-analyzer/references/org-mapping.md")
+endpoint_map = Read("${CLAUDE_PLUGIN_ROOT}/skills/coaching-call-analyzer/references/endpoint-map.md")
+simon_criteria = Read("${CLAUDE_PLUGIN_ROOT}/skills/coaching-call-analyzer/references/simon-criteria.md")
+
 Task(
   subagent_type: "general-purpose",
   description: "Stage 1 Phase A: {client} retrieval",
@@ -63,10 +77,18 @@ Task(
     Follow the Phase A steps below (A0-A6), then execute Phase B (B0-B1).
     Phase B agents should also run in background (run_in_background: true).
 
-    Read these reference files first:
-    - {skill_directory}/references/org-mapping.md
-    - {skill_directory}/references/endpoint-map.md
-    - {skill_directory}/references/simon-criteria.md
+    IMPORTANT: When spawning Phase B agents, embed the endpoint-map and simon-criteria
+    content directly in each agent's prompt (shown below). Phase B agents cannot read
+    plugin files.
+
+    ## Reference: Org Mapping
+    {org_mapping content}
+
+    ## Reference: Endpoint Map
+    {endpoint_map content}
+
+    ## Reference: Simon Criteria
+    {simon_criteria content}
 
     After Phase B agents are launched, write a PHASE_A_COMPLETE entry to pipeline.log
     and return the manifest summary. Phase B results will arrive asynchronously."
@@ -254,9 +276,8 @@ Task(
 
     1. Read the transcript file at: {ARTIFACT_ROOT}/{folder_name}/1-transcripts/call-{N}-transcript.md
 
-    2. Read these reference files for evaluation criteria:
-       - {skill_directory}/references/simon-criteria.md
-       - {skill_directory}/references/endpoint-map.md
+    2. Use the reference content embedded below (Endpoint Map and Simon Criteria)
+       for evaluation criteria. Do NOT try to read plugin files.
 
     3. Perform the analysis described below (Topic Clustering, Speaker Attribution,
        Component Evaluation, Essential Elements Scorecard).
@@ -434,6 +455,12 @@ Task(
       call_type: {type}
       topics: {#} clusters
       confidence: {best confidence}%
+
+    ## Reference: Endpoint Map
+    {endpoint_map content -- embedded by the Phase A orchestrator}
+
+    ## Reference: Simon Criteria
+    {simon_criteria content -- embedded by the Phase A orchestrator}
 
     Return to the caller: SUCCESS, file path, call type, top-level Essential Elements scorecard.
   "
