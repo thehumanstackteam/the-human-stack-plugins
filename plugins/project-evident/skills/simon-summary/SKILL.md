@@ -16,7 +16,14 @@ Read the essentials-review.md for a client -> write a funder-ready summary
 sentence -> push to the "Simon Summary" rich_text property on the client's
 page in the Clients database.
 
-**Plugin version: 1.2.0**
+**Plugin version: 1.3.0**
+
+**Invocation required:** This output must be produced by invoking this skill or
+by the orchestrator reading this file from disk before running Stage 4. Do not
+write a simon summary inline in conversation. If someone asks to "write a summary"
+or "generate the simon summary", invoke `/project-evident:simon-summary` or
+`/run-pipeline`. Summaries written without these instructions will miss critical
+rules (no dollar amounts, workflow counts not attendee counts, titles not names).
 
 ## The Meta-Task
 
@@ -33,6 +40,12 @@ can't name the tech, the people, the data, the before, the after, and the impact
 then the engagement didn't produce something defensible enough to report.
 
 ## Simon's 6 Characteristics
+
+The quality gate (Stage 2) tracks 7 Essential Elements -- it splits Impact into
+Quantitative and Qualitative separately. The Simon Summary merges them into one
+"Impact" characteristic because the summary sentence weaves numbers and mission
+outcomes together. 7 elements in the gate, 6 characteristics in the summary.
+Both are correct for their stage.
 
 | # | Characteristic | What It Proves |
 |---|---------------|---------------|
@@ -139,7 +152,7 @@ Save to `{ARTIFACT_ROOT}/{folder_name}/4-summary/simon-summary.md`:
 ---
 client: {Short Name}
 client_page_id: {from org-mapping}
-plugin_version: 1.2.0
+plugin_version: 1.3.0
 created_at: {ISO 8601 timestamp}
 source: 3-essentials/essentials-review.md
 ---
@@ -157,7 +170,7 @@ multiple rich_text array elements at sentence boundaries.
 
 Append to pipeline.log:
 ```
-[{ISO 8601 timestamp}] [v1.2.0] [stage-4:simon-summary] [{Short Name}]
+[{ISO 8601 timestamp}] [v1.3.0] [stage-4:simon-summary] [{Short Name}]
   Status: SUCCESS
   Output: 4-summary/simon-summary.md
   Target: Client page {client_page_id} -> "Simon Summary" property

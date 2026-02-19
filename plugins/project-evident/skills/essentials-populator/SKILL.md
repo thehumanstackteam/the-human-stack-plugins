@@ -13,7 +13,12 @@ Reads evaluation files from `2-evaluations/` → maps content to 50 Notion field
 endpoint-map.md → validates against Simon's 7 Essential Elements → writes
 `3-essentials/essentials-review.md` for Tim's review → appends to pipeline.log.
 
-**Plugin version: 1.1.0**
+**Plugin version: 1.3.0**
+
+**Invocation required:** This output must be produced by invoking this skill or
+by the orchestrator reading this file from disk before running Stage 2. Do not
+paraphrase these instructions inline. If someone asks to "populate essentials"
+in conversation, invoke `/project-evident:essentials-populator` or `/run-pipeline`.
 
 ## Prerequisites
 
@@ -33,7 +38,7 @@ agents do not have access to plugin files. Use the reference content provided in
 
 ```
 ARTIFACT_ROOT = ~/Dev/claude-cowork/Clients/Project Evident Updates
-PLUGIN_VERSION = 1.1.0
+PLUGIN_VERSION = 1.3.0
 ```
 
 ## Step 0: Resolve Client and Validate
@@ -116,10 +121,10 @@ worth highlighting in Description, Evidence, and Aha Moments fields.
 ### How to Write Each Field Type
 
 **Checkbox fields** (e.g., C3P1T1F1: AI Tools Purchase Checked):
-Use ✅ if the attribution log shows the client took action -- signed up, started
-using, configured, tested, adopted. Use 🚫 if not. Don't check based on
-discussion alone. "We've been using ChatGPT" = ✅. "We talked about maybe
-trying ChatGPT" = 🚫.
+Use `__YES__` if the attribution log shows the client took action -- signed up,
+started using, configured, tested, adopted. Use `__NO__` if not. Don't check
+based on discussion alone. "We've been using ChatGPT" = YES. "We talked about
+maybe trying ChatGPT" = NO.
 
 **Owner fields** (e.g., C3P1T1F3: Owner for AI Tools Purchase):
 Named person from the attribution log. "Maria Rodriguez, Intake Coordinator" —
@@ -330,7 +335,7 @@ essentials_page_id: {from org-mapping / validated from evaluations}
 source_evaluations:
   - 2-evaluations/call-1-evaluation.md
   - 2-evaluations/call-2-evaluation.md
-plugin_version: 1.0.0
+plugin_version: 1.3.0
 created_at: {ISO 8601 timestamp}
 ---
 
@@ -338,142 +343,167 @@ created_at: {ISO 8601 timestamp}
 
 **Status:** Ready for Tim's review. Edit any values below, then tell the evaluator to push.
 
-## Component 1: Pain Point & AI Solution
+### Component 1: AI Solution and Pain Point
 
-| Field | Value |
-|-------|-------|
-| C1P1T1: Pain Point | {value or blank} |
-| C1P1T2: Current Impact | {value or blank} |
-| C1P2: Reviewed AI Solutions and Tools | {value or blank} |
+**C1P1T1: Pain Point**
+{paragraph value or blank}
 
-## Component 2: Policy/Guidelines
+**C1P1T2: Current Impact**
+{paragraph value or blank}
 
-**C2 is ONLY about AI governance/responsible use policy** -- acceptable use
-guidelines, data privacy rules, responsible AI principles. It is NOT about the
-AI Implementation Plan Essentials document (the coaching deliverable/template).
+**C1P2: Reviewed AI Solutions and Tools**
+{paragraph value or blank}
 
-**C2T1F1 (Policy Document Link):** Include a link if one exists in the client's
-properties. But a link alone does not mean C2 is complete.
+### Component 2: Policy/Guidelines
 
-**C2T1F2 (Policy Notes):** Content about the Essentials document, implementation
-plan, or coaching template does NOT belong in this field. This field is exclusively
-for AI governance/usage policy work. If no governance policy work was done,
-leave it blank.
+C2 is ONLY about AI governance/responsible use policy -- acceptable use guidelines,
+data privacy rules, responsible AI principles. NOT about the Essentials document.
+If no governance policy work was done, leave C2T1F2 blank.
 
-**C2 checkbox logic:** The policy link existing is not enough. C2T1F1 gets a link
-if one exists. C2T1F2 reflects whether the linked document contains substantive,
-adopted governance policy -- not whether a link was pasted. An empty template,
-abandoned draft, or "pretty discursory" draft = not completed.
+**C2T1F1: Policy Document Link**
+{url or blank}
 
-| Field | Value |
-|-------|-------|
-| C2T1F1: Policy Document Link | {url or blank} |
-| C2T1F2: Policy Notes | {value or blank} |
+**C2T1F2: Policy Notes**
+{paragraph value or blank -- governance policy ONLY}
 
-## Component 3: Execution — Phase 1: Foundation & Setup
+### Component 3: Execution Checklist
 
-| Field | Value |
-|-------|-------|
-| C3P1T1F1: AI Tools Purchase Checked | ✅ or 🚫 |
-| C3P1T1F2: Description of AI Tools Purchase | {value} |
-| C3P1T1F3: Owner for AI Tools Purchase | {value} |
-| C3P1T1F4: Progress Indicators for AI Tools Purchase | {value} |
-| C3P1T2F1: Data Identified Checked | ✅ or 🚫 |
-| C3P1T2F2: Description of Data Identified and Readiness | {value} |
-| C3P1T2F3: Owner for Data Identification | {value} |
-| C3P1T2F4: Progress Indicators for Data Readiness | {value} |
-| C3P1T3F1: Technology Integration Complete Checked | ✅ or 🚫 |
-| C3P1T3F2: Description of Technology Integration | {value} |
-| C3P1T3F3: Owner for Technology Integration | {value} |
-| C3P1T3F4: Progress Indicators for Technology Integration | {value} |
+**C3P1T1F1: AI Tools Purchase Checked**
+__YES__ or __NO__
 
-## Component 3: Execution — Phase 2: Testing & Training
+**C3P1T1F2: Description of AI Tools Purchase**
+{paragraph value}
 
-| Field | Value |
-|-------|-------|
-| C3P2T1F1: Small Scale Test Run Checked | ✅ or 🚫 |
-| C3P2T1F2: Description of Small Scale Test | {value} |
-| C3P2T1F3: Owner for Small Scale Test | {value} |
-| C3P2T1F4: Progress Indicators for Small Scale Test | {value} |
+**C3P1T1F3: Owner for AI Tools Purchase**
+{named person with role}
 
-## Component 3: Execution — Phase 3: Launch & Rollout
+**C3P1T1F4: Progress Indicators for AI Tools Purchase**
+{paragraph value}
 
-| Field | Value |
-|-------|-------|
-| C3P3T1F1: Wider Rollout Checked | ✅ or 🚫 |
-| C3P3T1F2: Description of Wider Rollout | {value} |
-| C3P3T1F3: Owner for Wider Rollout | {value} |
-| C3P3T1F4: Progress Indicators for Wider Rollout | {value} |
+**C3P1T2F1: Data Identified Checked**
+__YES__ or __NO__
 
-## Component 4: Progress Monitoring — Before/After
+**C3P1T2F2: Description of Data Identified and Readiness**
+{paragraph value}
 
-| Field | Value |
-|-------|-------|
-| C4P1F1: Before AI | {value} |
-| C4P1F2: After AI | {value} |
+**C3P1T2F3: Owner for Data Identification**
+{named person with role}
 
-## Component 4: Progress Monitoring — Cost Savings
+**C3P1T2F4: Progress Indicators for Data Readiness**
+{paragraph value}
 
-| Field | Value |
-|-------|-------|
-| C4P2T1F1: Cost Savings Checked | ✅ or 🚫 |
-| C4P2T1F2: Description of Cost Savings | {value} |
-| C4P2T1F3: Evidence of Cost Savings | {value} |
+**C3P1T3F1: Technology Integration Complete Checked**
+__YES__ or __NO__
 
-## Component 4: Progress Monitoring — Productivity Gains
+**C3P1T3F2: Description of Technology Integration**
+{paragraph value}
 
-| Field | Value |
-|-------|-------|
-| C4P2T2F1: Productivity Gains Checked | ✅ or 🚫 |
-| C4P2T2F2: Description of Productivity Gains | {value} |
-| C4P2T2F3: Evidence of Productivity Gains | {value} |
+**C3P1T3F3: Owner for Technology Integration**
+{named person with role}
 
-## Component 4: Progress Monitoring — Policy Changes
+**C3P1T3F4: Progress Indicators for Technology Integration**
+{paragraph value}
 
-| Field | Value |
-|-------|-------|
-| C4P2T3F1: Policy Changes Checked | ✅ or 🚫 |
-| C4P2T3F2: Description of Policy Changes | {value} |
-| C4P2T3F3: Evidence of Policy Changes | {value} |
+**C3P2T1F1: Small Scale Test Run Checked**
+__YES__ or __NO__
 
-## Component 4: Progress Monitoring — Service Delivery
+**C3P2T1F2: Description of Small Scale Test**
+{paragraph value}
 
-| Field | Value |
-|-------|-------|
-| C4P2T4F1: Service Delivery Improvements Checked | ✅ or 🚫 |
-| C4P2T4F2: Description of Service Delivery Improvements | {value} |
-| C4P2T4F3: Evidence of Service Delivery Improvements | {value} |
+**C3P2T1F3: Owner for Small Scale Test**
+{named person with role}
 
-## Component 4: Progress Monitoring — Outcomes
+**C3P2T1F4: Progress Indicators for Small Scale Test**
+{paragraph value}
 
-| Field | Value |
-|-------|-------|
-| C4P2T5F1: Outcomes Improved Checked | ✅ or 🚫 |
-| C4P2T5F2: Description of Outcomes Improved | {value} |
-| C4P2T5F3: Evidence of Outcomes Improved | {value} |
+**C3P3T1F1: Wider Rollout Checked**
+__YES__ or __NO__
 
-## Component 4: Progress Monitoring — Funding
+**C3P3T1F2: Description of Wider Rollout**
+{paragraph value}
 
-| Field | Value |
-|-------|-------|
-| C4P2T6F1: Increased Funding Checked | ✅ or 🚫 |
-| C4P2T6F2: Description of Increased Funding | {value} |
-| C4P2T6F3: Evidence of Increased Funding | {value} |
+**C3P3T1F3: Owner for Wider Rollout**
+{named person with role}
 
-## Component 4: Progress Monitoring — Other Changes
+**C3P3T1F4: Progress Indicators for Wider Rollout**
+{paragraph value}
 
-| Field | Value |
-|-------|-------|
-| C4P2T7F1: Other Changes Checked | ✅ or 🚫 |
-| C4P2T7F2: Description of Other Changes | {value} |
-| C4P2T7F3: Evidence of Other Changes | {value} |
+### Component 4: Progress Monitoring
 
-## Narrative
+**C4P1F1: Before AI**
+{paragraph value}
 
-| Field | Value |
-|-------|-------|
-| Coaching Notes | {value} |
-| Aha Moments | {value} |
+**C4P1F2: After AI**
+{paragraph value}
+
+**C4P2T1F1: Cost Savings Checked**
+__YES__ or __NO__
+
+**C4P2T1F2: Description of Cost Savings**
+{paragraph value}
+
+**C4P2T1F3: Evidence of Cost Savings**
+{paragraph value}
+
+**C4P2T2F1: Productivity Gains Checked**
+__YES__ or __NO__
+
+**C4P2T2F2: Description of Productivity Gains**
+{paragraph value}
+
+**C4P2T2F3: Evidence of Productivity Gains**
+{paragraph value}
+
+**C4P2T3F1: Policy Changes Checked**
+__YES__ or __NO__
+
+**C4P2T3F2: Description of Policy Changes**
+{paragraph value}
+
+**C4P2T3F3: Evidence of Policy Changes**
+{paragraph value}
+
+**C4P2T4F1: Service Delivery Improvements Checked**
+__YES__ or __NO__
+
+**C4P2T4F2: Description of Service Delivery Improvements**
+{paragraph value}
+
+**C4P2T4F3: Evidence of Service Delivery Improvements**
+{paragraph value}
+
+**C4P2T5F1: Outcomes Improved Checked**
+__YES__ or __NO__
+
+**C4P2T5F2: Description of Outcomes Improved**
+{paragraph value}
+
+**C4P2T5F3: Evidence of Outcomes Improved**
+{paragraph value}
+
+**C4P2T6F1: Increased Funding Checked**
+__YES__ or __NO__
+
+**C4P2T6F2: Description of Increased Funding**
+{paragraph value or blank}
+
+**C4P2T6F3: Evidence of Increased Funding**
+{paragraph value or blank}
+
+**C4P2T7F1: Other Changes Checked**
+__YES__ or __NO__
+
+**C4P2T7F2: Description of Other Changes**
+{paragraph value}
+
+**C4P2T7F3: Evidence of Other Changes**
+{paragraph value}
+
+**Coaching Notes**
+{paragraph value}
+
+**Aha Moments**
+{paragraph value}
 
 ---
 
@@ -496,7 +526,7 @@ Qualitative Impact   | {✓/⚠/✗}   | {content or gap}
 ```
 
 **All 50 fields must appear.** Blank fields shown as blank, not omitted.
-Checkbox fields show ✅ or 🚫.
+Checkbox fields show `__YES__` or `__NO__`.
 
 **The file must be human-editable.** Tim opens this in a text editor, changes values,
 saves, then tells the evaluator to push. No special formatting beyond markdown tables.
@@ -506,7 +536,7 @@ saves, then tells the evaluator to push. No special formatting beyond markdown t
 Append to `{ARTIFACT_ROOT}/{folder_name}/pipeline.log`:
 
 ```
-[{ISO 8601 timestamp}] [v1.0.0] [stage-2:essentials-populator] [{Short Name}]
+[{ISO 8601 timestamp}] [v1.3.0] [stage-2:essentials-populator] [{Short Name}]
   Status: SUCCESS
   Input: 2-evaluations/call-1-evaluation.md, call-2-evaluation.md
   Output: 3-essentials/essentials-review.md
@@ -515,7 +545,7 @@ Append to `{ARTIFACT_ROOT}/{folder_name}/pipeline.log`:
 
 Or on failure:
 ```
-[{ISO 8601 timestamp}] [v1.0.0] [stage-2:essentials-populator] [{Short Name}]
+[{ISO 8601 timestamp}] [v1.3.0] [stage-2:essentials-populator] [{Short Name}]
   Status: FAILED
   Error: {what went wrong}
 ```
