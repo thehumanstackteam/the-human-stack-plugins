@@ -140,7 +140,7 @@
     {
       "name": "project-evident",
       "description": "4-stage autonomous pipeline for Project Evident coaching: analyze call transcripts, populate 50 Essentials fields, push to Notion, and generate funder-ready Simon Summaries. Fire-and-forget with pipeline continuation chaining. Comment-based veto model.",
-      "version": "3.0.0",
+      "version": "3.1.0",
       "author": {
         "name": "The Human Stack"
       },
