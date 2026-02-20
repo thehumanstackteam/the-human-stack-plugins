@@ -13,7 +13,7 @@ Reads evaluation files from `2-evaluations/` → maps content to 50 Notion field
 endpoint-map.md → validates against Simon's 7 Essential Elements → writes
 `3-essentials/essentials-review.md` for Tim's review → appends to pipeline.log.
 
-**Plugin version: 3.0.0**
+**Plugin version: 3.1.0**
 
 **Invocation required:** This output must be produced by invoking this skill or
 by the orchestrator reading this file from disk before running Stage 2. Do not
@@ -39,7 +39,7 @@ have dropped them.
 
 ```
 ARTIFACT_ROOT = ~/Dev/claude-cowork/Clients/Project Evident Updates
-PLUGIN_VERSION = 3.0.0
+PLUGIN_VERSION = 3.1.0
 ```
 
 ## Step 0: Resolve Client and Validate
@@ -80,6 +80,233 @@ PLUGIN_VERSION = 3.0.0
 
 Use the evaluation content to populate each field per endpoint-map.md. The mapping
 is mostly mechanical — the analytical work was done in Stage 1.
+
+### Writing Voice
+
+This is a funder-facing document. Every field -- Description, Evidence, Progress
+Indicators, Before/After, Coaching Notes, Aha Moments -- must read like it was
+written by a wire service reporter covering the social sector. AP style with a
+side of social impact. Facts carry the weight. The social impact context gives
+the facts meaning.
+
+**Core voice rules:**
+
+- **No adjectives doing persuasion work.** "Dramatic," "innovative,"
+  "transformative," "significant," "powerful," "comprehensive" -- if removing
+  the adjective loses no factual information, it was doing emotional work. Cut
+  it. "Dramatic reduction from 10-step to 3-step" -- remove "dramatic" and you
+  still have the proof. The adjective added nothing.
+
+- **No hedging.** "Staff now capture" not "staff are now able to capture." "The
+  workflow produces" not "the workflow enables." Scan for "able to," "enables,"
+  "allows," "helps," "can now," "positioned to," "expected to." Replace with
+  direct verbs. Hedging signals uncertainty. This document needs certainty. If
+  the thing happened, state it. If it didn't happen, don't include it.
+
+- **No emotional language.** The more painful the constraint or impressive the
+  result, the flatter the tone. Let the reader have the reaction. Don't have it
+  for them. "25% of attendees lack phones" stated flatly. Not "a quarter of
+  vulnerable participants struggle without access to mobile devices."
+
+- **No consultant jargon.** "Grant writing" is a plain noun. "AI-assisted grant
+  writing pipeline" is consultant framing. Write in plain nouns. Describe what
+  changed, not the methodology.
+
+- **Present tense for the after, past tense for the before.** Third person, no
+  "we" or "our."
+
+- **Numbers are concrete but not decorated.** "Over a year's backlog" not "a
+  staggering 12-month backlog." The number speaks for itself.
+
+- **If any word is doing emotional work instead of factual work, cut it.**
+
+### Guardrails
+
+These rules override everything else. If a guardrail conflicts with another
+instruction, the guardrail wins.
+
+**1. Nothing negative.** Do not include criticism, doubt, uncertainty, hesitation,
+skepticism, or any statement that frames a person, team, or organization in a
+negative light. If someone expressed doubt about AI, struggled with adoption, or
+was unsure about next steps -- leave it out entirely. There is no reason to
+include it. This document reports what was accomplished, not what wasn't.
+
+Good: "Kenneth demonstrated maturity in reevaluating his perspective on AI over
+the course of the engagement."
+
+Bad: "Kenneth wasn't sure about AI and said, 'AI will be the end of us.'"
+
+The good version focuses on the gain. The bad version creates impact by calling
+out the person's starting position. Never do this. Focus on where people arrived,
+not where they started.
+
+**2. Never comment on what wasn't done.** If a milestone wasn't reached, a tool
+wasn't adopted, or a rollout didn't happen -- do not mention it. Do not explain
+why. Do not describe the gap. Either leave the field blank or describe what IS
+happening next. "No formal AI use policy has been completed" -- acceptable as a
+plain fact if the field requires a value. "The team struggled to find time for
+policy development due to competing priorities" -- never. That's editorializing
+about a gap.
+
+**3. Never call out individuals in ways that could be perceived negatively.**
+Every mention of a named person must pass this test: if that person read this
+document, would they feel good about how they're represented? If there's any
+doubt, reframe or remove. People who started skeptical and became positive --
+describe their current position, not the journey from skepticism. People who
+didn't complete a task -- don't mention the task in connection with their name.
+
+**4. Quotes are rare and must be safe.** Direct quotes should only appear when
+they tell the story in a way that is compelling AND completely safe for the
+person being quoted. A quote must make the speaker look thoughtful, insightful,
+or accomplished. If a quote could embarrass, expose uncertainty, or be read as
+criticism by anyone -- do not use it. When in doubt, paraphrase reportorially
+instead of quoting directly.
+
+Good (quote): "Dr. H described the approach as 'cutting a solid hour or two'
+from the newsletter process."
+
+Bad (quote): "Maria said 'I don't really understand how this works but I guess
+we have to use it.'"
+
+The bad quote is honest but makes Maria look reluctant and confused in a
+permanent document. Paraphrase the outcome instead: "Maria adopted the tool
+and integrated it into her weekly workflow."
+
+**5. No organizational distress signals.** Layoffs, budget cuts, staff
+reductions, positions eliminated, roles unfilled, survival mode, inability to
+deliver. These are real context in the evaluations but toxic in a funder report.
+A funder reads "a staff member was laid off" and thinks: is this organization
+struggling? Are we funding a sinking ship? Even when the AI solution fills a
+gap left by a departure, frame it as capacity restored, not position replaced.
+"Restoring analytical capacity across 15 cities" -- not "replacing a laid-off
+staff member's function."
+
+**6. No claims that sound too good to be true.** "One minute of training,"
+"seconds instead of hours," "instantly adopted." These may be literally true
+but they undermine credibility in a funder report. A program officer reads
+"staff adopted the tool with one minute of training" and thinks: that can't be
+right. Reframe around the outcome, not the speed. "Staff adopted the tool and
+produced content they were satisfied with" -- credible. "Staff adopted the tool
+in one minute" -- unbelievable. The transcript is not the audience. The funder is.
+
+**7. No editorializing about motivations.** Never write "created to satisfy a
+grant requirement," "only did this because...," "reluctantly adopted." Report
+what happened. Not why you think it happened.
+
+### Component Writing Focus
+
+Each component has a distinct purpose in the funder story. Write each one with
+its specific focus in mind.
+
+**Component 1: AI Solution and Pain Point -- The Tension**
+
+C1 is the problem statement. Write it as a tension: what the organization needed
+to do for its mission vs. what prevented them from doing it. Not a description
+of how staff spent their time. A gap between what the mission required and what
+was possible.
+
+Why tension, not description: "Staff spent a full day researching and writing
+each letter of inquiry" describes a process. The funder understands what was
+happening but not why it matters. "The organization needed to cultivate a
+portfolio of private family foundation prospects but each required 8 or more
+hours of manual research" states a need and a constraint in tension. The funder
+immediately understands the problem isn't the hours -- it's that the hours made
+the mission goal impossible at scale.
+
+C1P1T1 (Pain Point) should state the tension. C1P1T2 (Current Impact) should
+state what solving this tension means for the people the organization serves.
+The impact isn't "staff save time" -- it's what they do with that time that
+serves the mission.
+
+**Component 2: Policy/Guidelines -- Governance and Engagement**
+
+C2 is about the AI governance/responsible use policy -- acceptable use guidelines,
+data privacy rules, responsible AI principles. If the client developed or adopted
+a policy, describe it factually. If conversations happened around policy
+development, they can be included but must be framed to show engagement and
+thoughtfulness. Never frame policy conversations in a way that calls anyone out
+or suggests resistance. If someone raised concerns about AI policy, that's
+"thoughtful engagement with governance questions" -- not "pushback" or
+"skepticism."
+
+Also note: the impact of having a policy connects to C4 (Policy Changes benefit).
+If the policy enabled something -- staff confidence, organizational readiness,
+funder compliance -- capture that connection in C4, not here. C2 describes the
+artifact. C4 describes its impact.
+
+**Component 3: Execution Checklist -- Emergent, Right-Sized, Small-Team**
+
+C3 describes implementation. These are small nonprofits -- 5 to 30 staff,
+budgets under $5M. They don't have full CI/CD processes and advanced IT staff
+running DevOps. Write implementation at the right scale.
+
+**The coaching engagement represents Phase 2 -- testing and pre-rollout.** The
+coaching sessions ARE the small-scale test. When writing C3P2 (Small Scale Test),
+recognize that the coaching sessions themselves -- where staff tried tools on
+real tasks with coach support -- constitute the test phase. A Deputy Director
+drafting one newsletter with AI during a coaching session IS a small-scale test.
+
+**Focus on emergent, tool-first adoption.** This was an emergent process -- the
+client found tools first, then discovered what problems the tools solved. The
+implementation story is about a small team finding the right tool for their
+actual constraint, not about a planned technology deployment. Frame it as
+discovery, not engineering.
+
+**If wider rollout hasn't happened yet, write what comes next.** Do not write
+"no wider rollout activity yet." Instead, describe the concrete steps the
+organization will take: "Program packet assembled for successor onboarding.
+Spring 2026 event identified as rollout target. Peer supervisor identified for
+event-day data capture." Lead with what WAS accomplished toward rollout, then
+state the next milestone. The reader should see momentum, not absence.
+
+**Component 4: Progress Monitoring -- AP Wire Style Benefits Reporting**
+
+C4 is where the benefits live. Write every C4 field -- Description, Evidence,
+Before/After, and each benefit category -- in AP wire style. Report facts from
+a neutral, internal point of view. You are a reporter documenting what happened,
+not an advocate arguing for impact.
+
+**Do not quote people in C4.** Describe each benefit reportorially. If someone
+said something that captures a benefit, paraphrase it as a factual observation.
+"Staff reported that newsletter production time dropped from three hours to under
+one hour" -- not "'This right here just cut a solid hour or two,' said Dr. H."
+
+**Read between the lines for realistic benefits.** The evaluation files contain
+what people said. The C4 fields need what actually changed. If a staff member
+describes doing something faster, that's a productivity gain. If an organization
+can now do something it couldn't before, that's a service delivery improvement.
+If policy adoption means the organization meets a funder requirement, that's a
+policy change benefit. Be smart about identifying all realistic benefits from
+the evidence, not just the ones explicitly labeled.
+
+**Before/After fields (C4P1F1, C4P1F2):** Describe the actual workflow steps,
+not feelings. "Before" should read like a process document for the old way.
+"After" should read like a process document for the new way. No emotional
+framing -- just the steps.
+
+**"Other Changes" (C4P2T7) -- Maturity and Perspective Shifts:** This field
+captures benefits that don't fit the standard categories. Be smart about
+including shifts in organizational maturity and individual perspective. When
+someone moved from uncertainty about AI to confident adoption, that IS a benefit
+-- frame it as growth and maturity, not as a before/after contrast that exposes
+the starting point.
+
+Good: "Staff demonstrated increasing confidence in evaluating AI tools for
+organizational fit, moving from initial exploration to independent tool selection
+and workflow integration."
+
+Bad: "Staff were initially resistant to AI and skeptical about its value, but
+after coaching they changed their minds."
+
+Good: "The organization developed internal capacity to assess new AI tools
+against operational needs without external coaching support."
+
+Bad: "Before the engagement, the organization had no idea how to evaluate AI
+and relied entirely on the coach for guidance."
+
+The good versions describe the arrived-at state. The bad versions create drama
+by contrasting with the starting point. The starting point doesn't belong in a
+funder report. The destination does.
 
 **Framing:**
 > "This was an emergent process — the client found tools first, then discovered
@@ -315,6 +542,22 @@ lead with what WAS accomplished, not what hasn't happened yet.
   "only did this because...", "reluctantly adopted")
 - Explaining why something WASN'T done -- if it's not done, leave blank or
   state plainly: "No formal AI use policy has been completed." Full stop.
+- Negative characterizations of any person -- skepticism, resistance, confusion,
+  reluctance, frustration. If someone's journey included those, describe only
+  the destination: their current capability, perspective, or contribution.
+- Commentary on what wasn't accomplished, what was missed, or what the
+  organization failed to do. Absence is silence, not narrative.
+- Quotes that expose uncertainty, reluctance, or confusion. If a quote doesn't
+  make the speaker look thoughtful or accomplished, paraphrase instead.
+- Adjectives doing persuasion work (dramatic, innovative, transformative,
+  significant, powerful, comprehensive). If removing it loses no fact, cut it.
+- Hedging language (able to, enables, allows, helps, can now, positioned to,
+  expected to). Use direct verbs. If it happened, state it happened.
+- Leadership doubt or uncertainty about next steps. If leadership isn't sure
+  what comes next, that information serves no purpose in this document.
+- Contrasts that create drama by exposing someone's starting position.
+  "Moved from skepticism to confidence" exposes the skepticism. "Demonstrated
+  confidence in evaluating AI tools independently" describes the result.
 
 ## Step 3: Supplementary Transcript Pull (If Needed)
 
@@ -336,7 +579,7 @@ essentials_page_id: {from org-mapping / validated from evaluations}
 source_evaluations:
   - 2-evaluations/call-1-evaluation.md
   - 2-evaluations/call-2-evaluation.md
-plugin_version: 3.0.0
+plugin_version: 3.1.0
 created_at: {ISO 8601 timestamp}
 ---
 
@@ -643,7 +886,7 @@ After writing essentials-review.md, essentials-payload.json, and logging to pipe
    ```
 6. Log push to pipeline.log:
    ```
-   [{ISO 8601 timestamp}] [v3.0.0] [pipeline:essentials-complete] [{Short Name}]
+   [{ISO 8601 timestamp}] [v3.1.0] [pipeline:essentials-complete] [{Short Name}]
      Status: PUSHED_TO_DOCUMENT
      Quality gate: {N}/7
      Fields pushed: {count}
@@ -666,7 +909,7 @@ After writing essentials-review.md, essentials-payload.json, and logging to pipe
    - Push to the 'Simon Summary' rich_text property on the Client page via Notion API
 6. Log to pipeline.log:
    ```
-   [{ISO 8601 timestamp}] [v3.0.0] [stage-4:simon-summary] [{Short Name}]
+   [{ISO 8601 timestamp}] [v3.1.0] [stage-4:simon-summary] [{Short Name}]
      Status: SUCCESS
      Output: 4-summary/simon-summary.md
      Target: Client page {client_page_id} -> "Simon Summary" property
