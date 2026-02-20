@@ -16,7 +16,7 @@ Read the essentials-review.md for a client -> write a funder-ready impact
 statement -> push to the "Simon Summary" rich_text property on the client's
 page in the Clients database.
 
-**Plugin version: 2.3.0**
+**Plugin version: 2.4.0**
 
 **Invocation required:** This output must be produced by invoking this skill or
 by the orchestrator reading this file from disk before running Stage 4. Do not
@@ -253,6 +253,22 @@ social impact context gives the facts meaning.
   people served**
 - **Plumbing** (Drive folders, custom instructions, source selection,
   human-in-the-loop architecture)
+- **Organizational distress signals** -- layoffs, budget cuts, staff reductions,
+  positions eliminated, roles unfilled. These are real context in the evaluations
+  but toxic in a funder report. A funder reads "a staff member was laid off" and
+  thinks: is this organization struggling? Are we funding a sinking ship? Even
+  when the AI solution fills a gap left by a layoff, frame it as capacity
+  restored, not position replaced. "Restoring analytical capacity across 15
+  cities" -- not "replacing a laid-off staff member's function." The evaluations
+  contain organizational realities. The summary contains organizational results.
+- **Claims that sound too good to be true** -- "one minute of training,"
+  "seconds instead of hours," "instantly adopted." These may be literally true
+  (someone did say it in a transcript) but they undermine credibility in a
+  funder report. A program officer reads "staff adopted the tool with one minute
+  of training" and thinks: that can't be right. Reframe around the outcome, not
+  the speed of adoption. "Staff adopted the tool and produced content they were
+  satisfied with" -- credible. "Staff adopted the tool in one minute" --
+  unbelievable. The transcript is not the audience. The funder is.
 
 ---
 
@@ -342,6 +358,38 @@ strongest honest story? Use that framing.
 If the aggregated number is still small, don't lead with it -- lead with what
 it was blocking. Never inflate. Reframe.
 
+### 8. Coverage Test
+
+Read ALL the C4P2 benefit fields that are checked YES. List the major value
+streams. Does the summary mention each one? If a significant value stream is
+missing from the benefit cascade, add it.
+
+Why this matters: the essentials often contain multiple distinct value streams
+-- newsletter production, data analysis, grant writing, membership tracking.
+It's easy to fixate on the most obvious stream and miss others. If SV@Home's
+Salesforce consulting bottleneck is a major value stream but the summary only
+talks about newsletters, the summary is incomplete. The funder should see the
+full scope of what the coaching engagement touched.
+
+This doesn't mean listing every minor benefit. It means: if the evaluations
+identified a major operational bottleneck that the coaching addressed, it
+belongs in the summary. Read the Value Proxy Table if one exists -- each
+stream heading is a candidate.
+
+### 9. Credibility Test
+
+Read the summary as a skeptical program officer. Does any claim sound too
+good to be true? Does any detail make the organization look bad? Flag:
+
+- Time claims that strain credulity ("one minute," "seconds," "instantly")
+- Organizational distress (layoffs, budget cuts, unfilled positions)
+- Superlatives without proof ("the most," "unprecedented," "revolutionary")
+- Implied causation the coaching didn't earn
+
+If found, reframe the claim around the outcome rather than the speed, or
+remove the distress signal entirely. The transcript may contain these details
+accurately. The funder report cannot.
+
 ---
 
 ## Prerequisites
@@ -386,7 +434,7 @@ Sentence 2: the tool with parenthetical + benefit cascade ending with mission.
 
 ### Step 4: Run the self-evaluation
 
-All 7 tests. If any fails, rewrite the failing element. Do not patch. Rewrite.
+All 9 tests. If any fails, rewrite the failing element. Do not patch. Rewrite.
 
 ### Step 5: Write to file and push
 
@@ -400,7 +448,7 @@ Save to `{ARTIFACT_ROOT}/{folder_name}/4-summary/simon-summary.md`:
 ---
 client: {Short Name}
 client_page_id: {from org-mapping}
-plugin_version: 2.3.0
+plugin_version: 2.4.0
 created_at: {ISO 8601 timestamp}
 source: 3-essentials/essentials-review.md
 ---
@@ -418,12 +466,12 @@ multiple rich_text array elements at sentence boundaries.
 
 Append to pipeline.log:
 ```
-[{ISO 8601 timestamp}] [v2.3.0] [stage-4:simon-summary] [{Short Name}]
+[{ISO 8601 timestamp}] [v2.4.0] [stage-4:simon-summary] [{Short Name}]
   Status: SUCCESS
   Output: 4-summary/simon-summary.md
   Target: Client page {client_page_id} -> "Simon Summary" property
   Lead type: {constraint|blockage|time_collapse|tool}
-  Self-eval: {N}/7 passed on first draft
+  Self-eval: {N}/9 passed on first draft
   Length: {char count}
 ```
 
