@@ -7,9 +7,10 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TaskOutput
 Run the full pipeline for **$ARGUMENTS** autonomously. No prompting,
 no approval gates, no stopping between stages. Tim has veto power after the fact.
 
-**Architecture:** Main conversation orchestrates and runs all Bash. Background
-agents handle AI-heavy analysis with fresh context windows. Each agent reads
-skill files and reference files from disk -- nothing is embedded in prompts.
+**Architecture (v3.0.0):** Thin dispatcher. The main conversation reads reference files,
+dispatches Stage 1 as a background agent, and returns immediately. Each stage auto-chains
+to the next via pipeline continuation -- the orchestrator does NOT hold context for
+the full run. Background agents run Bash (python scripts, curl) autonomously.
 
 **Every stage updates the Status field on the Essentials page in Notion.**
 
@@ -43,240 +44,152 @@ ARTIFACT_ROOT = ~/Dev/claude-cowork/Clients/Project Evident Updates
    - `{REPO}/skills/coaching-call-analyzer/references/endpoint-map.md`
    - `{REPO}/skills/coaching-call-analyzer/references/simon-criteria.md`
 
-2. Resolve client from org-mapping. HALT if IDs are missing.
+2. Also read skill files (needed for embedding in background agent prompts):
+   - `{REPO}/skills/coaching-call-analyzer/SKILL.md`
+   - `{REPO}/skills/essentials-populator/SKILL.md`
+   - `{REPO}/skills/simon-summary/SKILL.md`
+
+3. Resolve client from org-mapping. HALT if IDs are missing.
    Extract: `client_page_id`, `essentials_page_id`, `folder_name`, `short_name`.
 
-3. Set working directory: `{ARTIFACT_ROOT}/{folder_name}/`
+4. Set working directory: `{ARTIFACT_ROOT}/{folder_name}/`
 
-4. Export Notion token ONCE (all subsequent Bash calls inherit it):
+5. Create folder structure:
+   ```bash
+   mkdir -p "{ARTIFACT_ROOT}/{folder_name}/1-transcripts"
+   mkdir -p "{ARTIFACT_ROOT}/{folder_name}/2-evaluations"
+   mkdir -p "{ARTIFACT_ROOT}/{folder_name}/3-essentials"
+   mkdir -p "{ARTIFACT_ROOT}/{folder_name}/4-summary"
+   ```
+
+6. Export Notion token:
    ```bash
    export NOTION_API_KEY=$(op item get 'Notion Token' --vault 'MCP Tokens' --fields credential --reveal 2>/dev/null)
    ```
 
-5. Check current state: read pipeline.log and filesystem to determine where to
-   pick up (skip completed stages).
+7. Check current state: read pipeline.log and filesystem to determine where to
+   pick up (skip completed stages). If a stage is already complete, dispatch
+   from the next incomplete stage instead.
 
-### Stage 1A: Pull Transcripts
+### Dispatch: Launch from the right stage
 
-Skip if `1-transcripts/manifest.json` already exists with calls.
+Based on pipeline state, dispatch the appropriate stage as a background agent.
+Each stage includes pipeline continuation instructions that auto-chain to the next.
+
+**If starting from Stage 1 (no manifest or evaluations):**
 
 1. Update status:
    ```bash
    python3 {REPO}/scripts/update-status.py '{short_name}' 'Pulling Transcripts'
    ```
 
-2. Run directly in main conversation:
-   ```bash
-   python3 {REPO}/scripts/pull-transcripts.py '{short_name}'
-   ```
+2. Launch ONE background agent that handles the full Stage 1 -> 2 -> 3 -> 4 chain:
 
-3. Verify: manifest.json exists and lists `calls_to_analyze`.
+```
+Task(
+  subagent_type: "general-purpose",
+  description: "Pipeline: {client} (Stage 1 -> 4)",
+  run_in_background: true,
+  prompt: "You are the autonomous pipeline runner for Project Evident.
+    You run the FULL pipeline from Stage 1 through Stage 4 without stopping.
+    Never ask questions. Never wait for approval. Run to completion or halt on error.
 
-### Stage 1B: Analyze Each Transcript
+    ## Client Context
+    Client: {short_name}
+    Client Page ID: {client_page_id}
+    Essentials Page ID: {essentials_page_id}
+    Folder: {ARTIFACT_ROOT}/{folder_name}/
 
-Skip if `2-evaluations/` already has files matching manifest count.
+    ## Notion API Access
+    Export before any API/script calls:
+      export NOTION_API_KEY=$(op item get 'Notion Token' --vault 'MCP Tokens' --fields credential --reveal 2>/dev/null)
 
-1. Update status:
-   ```bash
-   python3 {REPO}/scripts/update-status.py '{short_name}' 'Analyzing Calls'
-   ```
+    ## Stage 1A: Pull Transcripts
+    Follow the coaching-call-analyzer SKILL.md Phase A steps (A0-A6):
+    - Retrieve coaching calls from Notion for this client
+    - Filter out cancellations and non-sessions
+    - Write raw transcripts and manifest to disk
 
-2. Read `manifest.json` to get the list of calls and their transcript file paths.
+    ## Stage 1B: Analyze Each Transcript
+    - Update status: python3 {REPO}/scripts/update-status.py '{short_name}' 'Analyzing Calls'
+    - Launch N parallel background agents -- one per call -- ALL in a SINGLE message
+    - Each agent gets run_in_background: true
+    - Embed endpoint-map and simon-criteria in each agent's prompt
+    - Poll for completion: count evaluation files every 30 seconds
+    - When all evaluations exist (or 10 min timeout), proceed
 
-3. Launch N parallel background agents -- one per call -- ALL in a SINGLE message.
-   Each agent gets a short prompt that tells it to read everything from disk:
+    ## Stage 2: Populate Essentials
+    - Update status: python3 {REPO}/scripts/update-status.py '{short_name}' 'Populating Fields'
+    - Follow the essentials-populator SKILL.md
+    - Write essentials-review.md and essentials-payload.json
+    - Run quality gate. Retry up to 2 times if <7/7.
+    - Update status: python3 {REPO}/scripts/update-status.py '{short_name}' 'Quality Gate'
 
-   ```
-   Task(
-     subagent_type: "general-purpose",
-     description: "Analyze call {N}: {client}",
-     run_in_background: true,
-     prompt: "You are a coaching call analyzer for Project Evident.
+    ## Stage 3: Push to Notion
+    - Update status: python3 {REPO}/scripts/update-status.py '{short_name}' 'Pushing to Notion'
+    - Run: python3 {REPO}/scripts/push-essentials.py '{short_name}'
+    - Verify exit code
+    - Update status: python3 {REPO}/scripts/update-status.py '{short_name}' 'Pushed To Document'
+    - Log to pipeline.log
 
-       Read your instructions:
-         ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/skills/coaching-call-analyzer/SKILL.md
-       Follow ONLY the 'PHASE B: Parallel Analysis' section onward.
+    ## Stage 4: Simon Summary
+    - Update status: python3 {REPO}/scripts/update-status.py '{short_name}' 'Writing Summary'
+    - Follow the simon-summary SKILL.md
+    - Write 4-summary/simon-summary.md
+    - Push to 'Simon Summary' property on Client page via Notion API
+    - Log to pipeline.log
 
-       Read these reference files:
-         ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/skills/coaching-call-analyzer/references/endpoint-map.md
-         ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/skills/coaching-call-analyzer/references/simon-criteria.md
+    ## Error Handling
+    - If any Bash script fails, log the error to pipeline.log and HALT
+    - If Phase B agents produce no output after 10 minutes, log TIMEOUT and continue
+    - If quality gate fails after retries, proceed but flag in log
 
-       Analyze this transcript:
-         {working_dir}/1-transcripts/call-{N}-transcript.md
+    ## Coaching Call Analyzer SKILL.md
+    {paste full coaching-call-analyzer SKILL.md content here}
 
-       Write your evaluation to:
-         {working_dir}/2-evaluations/call-{N}-evaluation.md
+    ## Essentials Populator SKILL.md
+    {paste full essentials-populator SKILL.md content here}
 
-       Client: {short_name}
-       Session number: {N}
-       Client page ID: {client_page_id}
-       Essentials page ID: {essentials_page_id}
+    ## Simon Summary SKILL.md
+    {paste full simon-summary SKILL.md content here}
 
-       Follow the SKILL.md instructions EXACTLY. Read the files from disk,
-       do not ask for any input. Write the evaluation file and finish."
-   )
-   ```
+    ## Reference: Org Mapping
+    {paste full org-mapping.md content here}
 
-4. **Poll for completion:**
-   - Every 30 seconds, count files in `2-evaluations/` matching `call-*-evaluation.md`
-   - When count matches manifest `calls_to_analyze` count -> done
-   - If stuck 5+ minutes with no new files, log PARTIAL and continue with what exists
+    ## Reference: Endpoint Map
+    {paste full endpoint-map.md content here}
 
-5. Log completion to pipeline.log.
+    ## Reference: Simon Criteria
+    {paste full simon-criteria.md content here}"
+)
+```
 
-### Stage 2 + 2.5: Populate Essentials and Quality Gate
+**If resuming from Stage 2 (evaluations exist, no essentials-review.md):**
+Dispatch from Stage 2 onward using the same pattern but skip Stage 1.
 
-Skip if `3-essentials/essentials-review.md` already exists.
+**If resuming from Stage 3 (essentials-review.md exists, not pushed):**
+Run push-essentials.py directly, then dispatch Stage 4.
 
-1. Update status:
-   ```bash
-   python3 {REPO}/scripts/update-status.py '{short_name}' 'Populating Fields'
-   ```
+**If resuming from Stage 4 (pushed, no simon-summary.md):**
+Dispatch Stage 4 only.
 
-2. Launch ONE background agent:
-
-   ```
-   Task(
-     subagent_type: "general-purpose",
-     description: "Populate essentials: {client}",
-     run_in_background: true,
-     prompt: "You are the essentials populator for Project Evident.
-
-       Read your instructions:
-         ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/skills/essentials-populator/SKILL.md
-
-       Read these reference files:
-         ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/skills/coaching-call-analyzer/references/endpoint-map.md
-         ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/skills/coaching-call-analyzer/references/simon-criteria.md
-
-       Read ALL evaluation files in:
-         {working_dir}/2-evaluations/
-
-       Client: {short_name}
-       Client page ID: {client_page_id}
-       Essentials page ID: {essentials_page_id}
-       Working directory: {working_dir}
-
-       Produce TWO output files:
-       1. {working_dir}/3-essentials/essentials-review.md
-          (human-readable review per SKILL.md format)
-       2. {working_dir}/3-essentials/essentials-payload.json
-          (machine-readable for push script -- see SKILL.md for format)
-
-       Run the quality gate (7 Essential Elements from simon-criteria).
-       If <7/7 pass, identify gaps and retry up to 2 times.
-       If still <7/7 after retries, proceed but note gaps in the review file.
-
-       Follow the SKILL.md instructions EXACTLY. Read all files from disk,
-       do not ask for any input. Write both output files and finish."
-   )
-   ```
-
-3. Poll: check for existence of `3-essentials/essentials-review.md` every 30 seconds.
-
-4. When complete, update status:
-   ```bash
-   python3 {REPO}/scripts/update-status.py '{short_name}' 'Quality Gate'
-   ```
-
-### Stage 3: Push to Notion
-
-1. Update status:
-   ```bash
-   python3 {REPO}/scripts/update-status.py '{short_name}' 'Pushing to Notion'
-   ```
-
-2. Run directly in main conversation:
-   ```bash
-   python3 {REPO}/scripts/push-essentials.py '{short_name}'
-   ```
-
-3. Verify push succeeded (check exit code).
-
-4. Update status:
-   ```bash
-   python3 {REPO}/scripts/update-status.py '{short_name}' 'Pushed To Document'
-   ```
-
-5. Log to pipeline.log:
-   ```
-   [{timestamp}] [v2.2.0] [pipeline:essentials-complete] [{client}]
-     Status: PUSHED_TO_DOCUMENT
-     Quality gate: {N}/7
-     Fields pushed: {count}
-     Essentials page: {essentials_page_id}
-   ```
-
-### Stage 4: Simon Summary
-
-Skip if `4-summary/simon-summary.md` already exists.
-
-1. Update status:
-   ```bash
-   python3 {REPO}/scripts/update-status.py '{short_name}' 'Writing Summary'
-   ```
-
-2. Launch ONE background agent:
-
-   ```
-   Task(
-     subagent_type: "general-purpose",
-     description: "Simon summary: {client}",
-     run_in_background: true,
-     prompt: "You are the Simon Summary writer for Project Evident.
-
-       Read your instructions:
-         ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/skills/simon-summary/SKILL.md
-
-       Read the essentials review:
-         {working_dir}/3-essentials/essentials-review.md
-
-       Read reference:
-         ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/skills/coaching-call-analyzer/references/simon-criteria.md
-
-       Client: {short_name}
-       Client page ID: {client_page_id}
-       Working directory: {working_dir}
-
-       Write to: {working_dir}/4-summary/simon-summary.md
-
-       After writing the summary, push it to Notion:
-       - Target: Client page {client_page_id} (NOT essentials page)
-       - Property: 'Simon Summary' (rich_text)
-       - NOTION_API_KEY is already in the environment -- use curl directly
-       - If summary exceeds 2000 chars, split into multiple rich_text elements
-         at sentence boundaries
-
-       Follow the SKILL.md instructions EXACTLY. Read all files from disk,
-       do not ask for any input. Write the file, push to Notion, and finish."
-   )
-   ```
-
-3. Poll: check for existence of `4-summary/simon-summary.md` every 30 seconds.
-
-4. Log to pipeline.log:
-   ```
-   [{timestamp}] [v2.2.0] [stage-4:simon-summary] [{client}]
-     Status: SUCCESS
-     Output: 4-summary/simon-summary.md
-     Target: Client page {client_page_id} -> 'Simon Summary' property
-   ```
-
-### Completion
-
-Tell the user:
-"Pipeline complete for {client}.
-- Essentials pushed to Notion
-- Simon Summary written to Client page
-- Check pipeline.log for details
-
-To request changes: add comments on the Essentials page in Notion, then
-`/evaluate-session revise {client}` -- the agent reads your comments and fixes."
+3. **Tell the user the pipeline is running:**
+   - Report which client and which starting stage
+   - Explain: "Pipeline is running autonomously in the background. All stages will auto-chain."
+   - Instruct: "Check progress with `/evaluate-session status {client}` or read `pipeline.log`."
+   - Do NOT block waiting for results
 
 ## If $ARGUMENTS is "all"
 
 Run the full sequence above for EACH client sequentially (not parallel --
 each client pipeline uses significant context). Report progress per client.
+
+For each client:
+1. Check pipeline state
+2. Dispatch from the appropriate stage
+3. Wait for the background agent to complete (poll pipeline.log for the
+   stage-4:simon-summary SUCCESS entry, or timeout after 30 minutes)
+4. Move to the next client
 
 ## Error Handling
 

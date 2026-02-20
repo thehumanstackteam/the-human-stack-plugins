@@ -16,7 +16,7 @@ Read the essentials-review.md for a client -> write a funder-ready impact
 statement -> push to the "Simon Summary" rich_text property on the client's
 page in the Clients database.
 
-**Plugin version: 2.4.0**
+**Plugin version: 3.0.0**
 
 **Invocation required:** This output must be produced by invoking this skill or
 by the orchestrator reading this file from disk before running Stage 4. Do not
@@ -448,7 +448,7 @@ Save to `{ARTIFACT_ROOT}/{folder_name}/4-summary/simon-summary.md`:
 ---
 client: {Short Name}
 client_page_id: {from org-mapping}
-plugin_version: 2.4.0
+plugin_version: 3.0.0
 created_at: {ISO 8601 timestamp}
 source: 3-essentials/essentials-review.md
 ---
@@ -580,6 +580,13 @@ Why it works:
 - `4-summary/simon-summary.md` -- the funder-ready impact statement with frontmatter
 - "Simon Summary" property updated on the Client page in Notion
 - Appended entry in `pipeline.log`
+
+## Pipeline Continuation
+
+Stage 4 is the final pipeline stage. After completion:
+- Log SUCCESS to pipeline.log (format shown above)
+- No further stages to dispatch
+- Pipeline is complete for this client
 
 ## What This Skill Does NOT Do
 

@@ -13,7 +13,7 @@ Reads evaluation files from `2-evaluations/` → maps content to 50 Notion field
 endpoint-map.md → validates against Simon's 7 Essential Elements → writes
 `3-essentials/essentials-review.md` for Tim's review → appends to pipeline.log.
 
-**Plugin version: 2.2.0**
+**Plugin version: 3.0.0**
 
 **Invocation required:** This output must be produced by invoking this skill or
 by the orchestrator reading this file from disk before running Stage 2. Do not
@@ -39,7 +39,7 @@ have dropped them.
 
 ```
 ARTIFACT_ROOT = ~/Dev/claude-cowork/Clients/Project Evident Updates
-PLUGIN_VERSION = 2.2.0
+PLUGIN_VERSION = 3.0.0
 ```
 
 ## Step 0: Resolve Client and Validate
@@ -336,7 +336,7 @@ essentials_page_id: {from org-mapping / validated from evaluations}
 source_evaluations:
   - 2-evaluations/call-1-evaluation.md
   - 2-evaluations/call-2-evaluation.md
-plugin_version: 2.2.0
+plugin_version: 3.0.0
 created_at: {ISO 8601 timestamp}
 ---
 
@@ -618,10 +618,62 @@ Present:
   quality gate results, and metadata. Used by `push-essentials.py` for reliable parsing.
 - Appended entry in `pipeline.log`
 
+## Pipeline Continuation
+
+After writing essentials-review.md, essentials-payload.json, and logging to pipeline.log:
+
+### Stage 3: Push to Notion
+1. Update status to 'Quality Gate':
+   ```bash
+   export NOTION_API_KEY=$(op item get 'Notion Token' --vault 'MCP Tokens' --fields credential --reveal 2>/dev/null)
+   python3 ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/scripts/update-status.py '{short_name}' 'Quality Gate'
+   ```
+2. Update status to 'Pushing to Notion':
+   ```bash
+   python3 ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/scripts/update-status.py '{short_name}' 'Pushing to Notion'
+   ```
+3. Run the push script:
+   ```bash
+   python3 ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/scripts/push-essentials.py '{short_name}'
+   ```
+4. Verify exit code. If push fails, log FAILED to pipeline.log and HALT.
+5. Update status to 'Pushed To Document':
+   ```bash
+   python3 ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/scripts/update-status.py '{short_name}' 'Pushed To Document'
+   ```
+6. Log push to pipeline.log:
+   ```
+   [{ISO 8601 timestamp}] [v3.0.0] [pipeline:essentials-complete] [{Short Name}]
+     Status: PUSHED_TO_DOCUMENT
+     Quality gate: {N}/7
+     Fields pushed: {count}
+     Essentials page: {essentials_page_id}
+   ```
+
+### Stage 4: Simon Summary
+1. Update status to 'Writing Summary':
+   ```bash
+   python3 ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/scripts/update-status.py '{short_name}' 'Writing Summary'
+   ```
+2. Read the simon-summary SKILL.md from:
+   `~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/skills/simon-summary/SKILL.md`
+3. Read essentials-review.md (you just wrote it)
+4. Read simon-criteria reference (from references/ or as embedded in your prompt)
+5. Follow the SKILL.md instructions to:
+   - Extract raw ingredients, choose the lead, draft two sentences
+   - Run all 9 self-evaluation tests
+   - Write to `{working_dir}/4-summary/simon-summary.md`
+   - Push to the 'Simon Summary' rich_text property on the Client page via Notion API
+6. Log to pipeline.log:
+   ```
+   [{ISO 8601 timestamp}] [v3.0.0] [stage-4:simon-summary] [{Short Name}]
+     Status: SUCCESS
+     Output: 4-summary/simon-summary.md
+     Target: Client page {client_page_id} -> "Simon Summary" property
+   ```
+
 ## What This Skill Does NOT Do
 
-- Write to Notion (that's Stage 3: evaluator, after Tim approves)
 - Analyze raw transcripts from scratch (use Stage 1: call-analyzer)
 - Update component statuses on the Client Page
 - Generate the Google Doc (use the Essentials DB button)
-- Run push-essentials.py (that's Stage 3, run by the orchestrator)

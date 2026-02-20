@@ -1,20 +1,23 @@
 ---
-description: Pipeline controller for Project Evident -- routes to analyze, populate, push, or status check
+description: Pipeline controller for Project Evident -- routes to analyze, populate, push, status, or revise
 argument-hint: [client-name or "batch" or "status [client]" or "push [client]"]
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TaskOutput
 ---
 
 Process Project Evident coaching work for **$ARGUMENTS** using the coaching-evaluator skill.
+All stages run AUTONOMOUSLY in the background. No prompting, no approval gates.
+Tim vetoes after the fact.
 
 This is the single entry point. The evaluator reads pipeline state and routes to the right workflow:
 
-- **"process [client]"** -> full pipeline (analyze in background -> populate -> push). Use `/run-pipeline` for autonomous execution.
+- **"process [client]"** -> full pipeline. Dispatches Stage 1 as background agent; pipeline auto-chains through all stages.
 - **"status [client]"** -> read pipeline.log + filesystem, report what's done/pending/running
-- **"push [client]"** -> validate essentials-review.md exists -> generate JSON -> push to Notion
-- **"analyze call for [client]"** -> dispatch Stage 1 call analyzer (background)
-- **"populate essentials for [client]"** -> dispatch Stage 2 populator only
+- **"push [client]"** -> validate essentials-review.md exists -> run push-essentials.py
+- **"analyze call for [client]"** -> dispatch Stage 1 call analyzer (background, auto-chains to Stage 2+)
+- **"populate essentials for [client]"** -> dispatch Stage 2 populator (background, auto-chains to Stage 3+4)
+- **"simon summary for [client]"** -> dispatch Stage 4 simon summary (background)
 - **"revise [client]"** -> read Notion comments on the Essentials page, apply changes, re-push
-- **"batch"** -> full pipeline for all 11 clients in order
+- **"batch"** -> full pipeline for all 11 clients sequentially (each auto-chains)
 
 Follow the coaching-evaluator skill workflow:
 
@@ -25,9 +28,15 @@ Follow the coaching-evaluator skill workflow:
 5. **Cross-validate log vs. filesystem** -- don't trust the log alone, don't trust files alone
 6. **Generate `essentials-payload.json` before pushing** -- this is the single source of truth for what gets written to Notion
 
-**All stages run as autonomous background subagents.** When dispatching Stage 1 or Stage 2, use `run_in_background: true`. The main conversation stays free. Use status checks to monitor progress.
+**All stages run as autonomous background subagents with pipeline continuation.**
+Each stage auto-dispatches the next stage on completion. The main conversation stays free.
 
-After any background subagent completes, **verify the expected output files exist** before proceeding to the next stage.
+When dispatching any stage:
+- Use `run_in_background: true`
+- Embed all reference file content in the subagent prompt
+- Include pipeline continuation instructions so the agent chains to the next stage
+- Include Notion token export: `export NOTION_API_KEY=$(op item get 'Notion Token' --vault 'MCP Tokens' --fields credential --reveal 2>/dev/null)`
+- Tell the agent to run autonomously: "Never ask questions. Never wait for approval."
 
 ## Revise Flow (Comment-Based Veto)
 

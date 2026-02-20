@@ -20,7 +20,7 @@ Two-phase architecture running as **autonomous background subagents**:
 Both phases run in the background via `run_in_background: true`. The main conversation
 stays free for other work. Progress is tracked in `pipeline.log`.
 
-**Plugin version: 2.1.0**
+**Plugin version: 3.0.0**
 
 **Invocation required:** This output must be produced by invoking this skill or
 by the orchestrator reading this file from disk before running Stage 1. Do not
@@ -177,7 +177,7 @@ transcript_page_id: {Notion page ID of this coaching call}
 session: {N}
 date: {YYYY-MM-DD}
 title: {page title from Notion}
-plugin_version: 2.1.0
+plugin_version: 3.0.0
 created_at: {ISO 8601 timestamp}
 ---
 
@@ -450,7 +450,7 @@ Task(
     session: {N}
     date: {date}
     call_type: {Rapport|Exploration|Traction|Wrap}
-    plugin_version: 2.1.0
+    plugin_version: 3.0.0
     created_at: {ISO 8601 timestamp}
     source_transcript: ../1-transcripts/call-{N}-transcript.md
     ---
@@ -634,11 +634,34 @@ Per client:
 - `1-transcripts/manifest.json` -- enumeration of all calls and filtering decisions
 - Appended entries in `pipeline.log`
 
+## Pipeline Continuation
+
+**Each Phase B agent checks for continuation after writing its evaluation file.**
+
+After writing the evaluation and logging to pipeline.log:
+1. Count evaluation files in `2-evaluations/` matching `call-*-evaluation.md`
+2. Read `1-transcripts/manifest.json` to get the expected count
+3. If evaluation count matches manifest `calls_to_analyze` count:
+   - Log `[stage-1:complete]` entry to pipeline.log
+   - Auto-dispatch Stage 2 (essentials populator) as a background agent
+   - The Stage 2 agent should include pipeline continuation to chain to Stage 3 and 4
+4. If evaluation count does not match yet:
+   - Log: "Phase B: {N} of {M} evaluations complete. Waiting for remaining agents."
+   - Do NOT dispatch Stage 2 -- another Phase B agent will trigger it
+
+**To dispatch Stage 2:** Read the essentials-populator SKILL.md from:
+`~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/skills/essentials-populator/SKILL.md`
+Then launch a background agent with all reference content embedded, including the
+pipeline continuation instructions from that SKILL.md. Update status to 'Populating Fields':
+```bash
+export NOTION_API_KEY=$(op item get 'Notion Token' --vault 'MCP Tokens' --fields credential --reveal 2>/dev/null)
+python3 ~/Dev/GitHub/the-human-stack-plugins/plugins/project-evident/scripts/update-status.py '{short_name}' 'Populating Fields'
+```
+
 ## What This Skill Does NOT Do
 
 - Write to Notion (file system is the artifact store)
 - Extract 50 field-level values (that's Stage 2: essentials-populator)
 - Generate the Essentials document or summary sentence
 - Track or recommend component statuses
-- Advance to Stage 2 (that's the evaluator's job)
 - Generate extra summary reports or scorecards not specified above
