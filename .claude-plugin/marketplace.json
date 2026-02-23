@@ -19,8 +19,8 @@
     },
     {
       "name": "architect",
-      "description": "Three-layer AI context framework. Bootstraps docs/architect/ with Product, Project, and Task layers. Auto-commits on plan approval and nudges feature-dev for implementation.",
-      "version": "2.0.0",
+      "description": "Three-layer AI context framework. Bootstraps docs/architect/ with Product, Project, and Task layers. Auto-commits on plan approval and nudges feature-dev for implementation. Includes Session Hoardinator for ingesting Claude Code session transcripts into Supabase.",
+      "version": "2.1.0",
       "author": {
         "name": "The Human Stack"
       },
