@@ -11,6 +11,17 @@
           }
         ]
       }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/templates/hooks/export-session.sh",
+            "timeout": 60
+          }
+        ]
+      }
     ]
   }
 }
