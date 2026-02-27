@@ -140,11 +140,81 @@
     {
       "name": "project-evident",
       "description": "4-stage autonomous pipeline for Project Evident coaching: analyze call transcripts, populate 50 Essentials fields, push to Notion, and generate funder-ready Simon Summaries. Fire-and-forget with pipeline continuation chaining. Comment-based veto model.",
-      "version": "3.0.0",
+      "version": "3.1.0",
       "author": {
         "name": "The Human Stack"
       },
       "source": "./plugins/project-evident",
+      "category": "productivity"
+    },
+    {
+      "name": "brand-voice",
+      "description": "Discover brand materials across enterprise platforms, generate LLM-ready guidelines, and enforce brand voice on AI content.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Tribe AI"
+      },
+      "source": "./plugins/brand-voice",
+      "category": "productivity"
+    },
+    {
+      "name": "design",
+      "description": "Accelerate design workflows \u2014 critique, design system management, UX writing, accessibility audits, research synthesis, and dev handoff.",
+      "version": "1.1.0",
+      "author": {
+        "name": "Anthropic"
+      },
+      "source": "./plugins/design",
+      "category": "productivity"
+    },
+    {
+      "name": "engineering",
+      "description": "Streamline engineering workflows \u2014 standups, code review, architecture decisions, incident response, and technical documentation.",
+      "version": "1.1.0",
+      "author": {
+        "name": "Anthropic"
+      },
+      "source": "./plugins/engineering",
+      "category": "productivity"
+    },
+    {
+      "name": "human-resources",
+      "description": "Streamline people operations \u2014 recruiting, onboarding, performance reviews, compensation analysis, and policy guidance.",
+      "version": "1.1.0",
+      "author": {
+        "name": "Anthropic"
+      },
+      "source": "./plugins/human-resources",
+      "category": "productivity"
+    },
+    {
+      "name": "operations",
+      "description": "Optimize business operations \u2014 vendor management, process documentation, change management, capacity planning, and compliance tracking.",
+      "version": "1.1.0",
+      "author": {
+        "name": "Anthropic"
+      },
+      "source": "./plugins/operations",
+      "category": "productivity"
+    },
+    {
+      "name": "slack-by-salesforce",
+      "description": "Official Slack MCP server for interactive and collaborative workflows. Surface insights, draft messages, and engage teams directly within Slack.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Salesforce"
+      },
+      "source": "./plugins/slack-by-salesforce",
+      "category": "productivity"
+    },
+    {
+      "name": "uxinator",
+      "description": "Expectation Architecture for all delivery modes. Routes context to strategy, keynote, or training mode. Maps expectations, detects mode drift, designs deliverables, and evaluates sessions.",
+      "version": "1.0.0",
+      "author": {
+        "name": "The Human Stack"
+      },
+      "source": "./plugins/uxinator",
       "category": "productivity"
     }
   ]
