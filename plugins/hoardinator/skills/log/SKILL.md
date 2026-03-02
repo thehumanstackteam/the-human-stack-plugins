@@ -7,7 +7,7 @@ description: >
   "save session to database".
 ---
 
-# Log Session (Phase 1 — Session Hoardinator)
+# Log Session
 
 Parse the current session's JSONL transcript, generate dollar-quoted SQL, and
 upload to Supabase. Supports full and incremental ingestion.
@@ -17,8 +17,8 @@ upload to Supabase. Supports full and incremental ingestion.
 Before doing anything, verify:
 
 1. `python3` is available: `which python3`. If missing, HALT and tell the user.
-2. `SUPABASE_ACCESS_TOKEN` is set: `echo $SUPABASE_ACCESS_TOKEN | head -c4`. If empty, HALT: "Set SUPABASE_ACCESS_TOKEN to use /log."
-3. `SUPABASE_PROJECT_REF` is set: `echo $SUPABASE_PROJECT_REF | head -c4`. If empty, HALT: "Set SUPABASE_PROJECT_REF to use /log."
+2. `SUPABASE_ACCESS_TOKEN` is set: `echo $SUPABASE_ACCESS_TOKEN | head -c4`. If empty, HALT: "Set SUPABASE_ACCESS_TOKEN to run /log."
+3. `SUPABASE_PROJECT_REF` is set: `echo $SUPABASE_PROJECT_REF | head -c4`. If empty, HALT: "Set SUPABASE_PROJECT_REF to run /log."
 
 ## Step 1: Identify the Current Session JSONL
 
@@ -40,29 +40,30 @@ To find the right file:
    parent path). Also resolve the project directory from the file path.
 
 Store these for later steps:
-- `SESSION_ID` — the UUID
-- `JSONL_PATH` — full path to the file
-- `PROJECT_DIR` — the `<project-hash>` directory containing the file
+- `SESSION_ID` -- the UUID
+- `JSONL_PATH` -- full path to the file
+- `PROJECT_DIR` -- the `<project-hash>` directory containing the file
 
 ## Step 2: Check for Incremental State
 
 Query Supabase for existing session data to determine if this is a fresh
-ingestion or an incremental update. Use the Supabase MCP tool if available
-(`mcp__supabase__execute_sql` or similar), otherwise fall back to the upload
-script's API:
+ingestion or an incremental update:
 
-```sql
-SELECT session_id, last_message_at, total_messages, total_tool_calls
-FROM sessions WHERE session_id = '<SESSION_ID>'
+```bash
+curl -s -X POST \
+  "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/query" \
+  -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "SELECT session_id, last_message_at, total_messages, total_tool_calls FROM sessions WHERE session_id = '"'"'<SESSION_ID>'"'"'"}'
 ```
 
 Three scenarios:
 
 | DB State | Action |
 |----------|--------|
-| No row returned | Full ingestion — all messages and tool calls |
-| Row exists, counts match local | Skip — session already current. Report and stop. |
-| Row exists, local has more | Incremental — pass existing state to the parser |
+| No row returned | Full ingestion -- all messages and tool calls |
+| Row exists, counts match local | Skip -- session already current. Report and stop. |
+| Row exists, local has more | Incremental -- pass existing state to the parser |
 
 If incremental, build a JSON string keyed by session_id with the DB values:
 ```
@@ -143,6 +144,5 @@ Include the session ID in the report so the user can reference it.
 ## What This Skill Does NOT Do
 
 - Batch-sweep all sessions (use `/ingest` for that)
-- Generate embeddings or classify learnings (handled by PreCompact hook)
-- Query analytics (future: `/hoardinator:query`)
-- Parse subagent transcripts (Phase 2)
+- Query analytics (use `/status` for that)
+- Parse subagent transcripts (future work)

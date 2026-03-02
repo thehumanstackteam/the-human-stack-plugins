@@ -19,8 +19,8 @@
     },
     {
       "name": "architect",
-      "description": "Three-layer AI context framework. Bootstraps docs/architect/ with Product, Project, and Task layers. Auto-commits on plan approval and nudges feature-dev for implementation. Includes Session Hoardinator for JSONL session ingestion and analytics.",
-      "version": "2.2.0",
+      "description": "Three-layer AI context framework. Bootstraps docs/architect/ with Product, Project, and Task layers. Auto-commits on plan approval and nudges feature-dev for implementation.",
+      "version": "2.3.0",
       "author": {
         "name": "The Human Stack"
       },
@@ -215,6 +215,16 @@
         "name": "The Human Stack"
       },
       "source": "./plugins/uxinator",
+      "category": "productivity"
+    },
+    {
+      "name": "hoardinator",
+      "description": "Ingest Claude Code JSONL session transcripts into Supabase for analytics and learning loop closure. Log, batch-ingest, and query session data across all your repos.",
+      "version": "1.0.0",
+      "author": {
+        "name": "The Human Stack"
+      },
+      "source": "./plugins/hoardinator",
       "category": "productivity"
     }
   ]

@@ -3,7 +3,7 @@
 > **Status**: Draft
 > **Author**: thehumanstack + Claude
 > **Date**: 2026-02-23
-> **Plugin**: Architect module — ships with the `architect` plugin via marketplace update
+> **Plugin**: `hoardinator` (standalone plugin)
 
 ---
 
@@ -21,7 +21,6 @@ Claude Code sessions generate rich JSONL transcripts — every user prompt, AI r
 
 ## Non-Goals
 
-- **Standalone plugin** — this ships as an architect module, not a separate installable plugin
 - **Real-time streaming** — ingestion is on-demand (`/log`) or batch (`/ingest`), not live
 - **Embedding generation** — the module ingests structured data; embedding is a separate concern (OpenAI API dependency)
 - **UI/dashboard** — analytics are consumed via SQL queries, not a built-in frontend
@@ -184,7 +183,7 @@ Unchanged from current schema. Five-layer classification (user/product/project/p
 
 ## Distribution
 
-Session Hoardinator ships as a module within the **architect plugin**. Any project with the architect plugin installed gets it automatically via marketplace update. No separate installation or configuration needed — it inherits the architect's Supabase MCP connection.
+Session Hoardinator ships as a standalone plugin installable via `/plugin install`.
 
 ## Plugin Components
 

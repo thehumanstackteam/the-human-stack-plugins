@@ -24,7 +24,6 @@ sessions are processed.
 
 - `python3` available in PATH
 - `SUPABASE_ACCESS_TOKEN` and `SUPABASE_PROJECT_REF` environment variables set
-- Supabase MCP connector available for querying existing state
 - `${CLAUDE_PLUGIN_ROOT}/scripts/parse-sessions.py` and
   `${CLAUDE_PLUGIN_ROOT}/scripts/upload-sessions.sh` present
 
@@ -43,20 +42,26 @@ skip namespace resolution.
 
 ## Step 2: Query Supabase for Existing Ingestion State
 
-Use Supabase MCP to query the `sessions` table for what has already been ingested.
+Query the `sessions` table for what has already been ingested:
 
 **For current-repo and date modes:**
 
-```sql
-SELECT session_id, last_message_at, total_messages, total_tool_calls
-FROM sessions WHERE repo = '<current-repo>'
+```bash
+curl -s -X POST \
+  "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/query" \
+  -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "SELECT session_id, last_message_at, total_messages, total_tool_calls FROM sessions WHERE repo = '"'"'<current-repo>'"'"'"}'
 ```
 
 **For `all` mode:**
 
-```sql
-SELECT session_id, last_message_at, total_messages, total_tool_calls
-FROM sessions
+```bash
+curl -s -X POST \
+  "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/query" \
+  -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "SELECT session_id, last_message_at, total_messages, total_tool_calls FROM sessions"}'
 ```
 
 Build a JSON object from the results, mapping `session_id` to its state:
