@@ -1,6 +1,6 @@
 {
   "name": "architect",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Three-layer AI context framework for project development. Bootstraps docs/architect/ with Product, Project, and Task layers. Auto-commits on plan approval and nudges feature-dev for implementation.",
   "author": {
     "name": "Tim Lockie",
