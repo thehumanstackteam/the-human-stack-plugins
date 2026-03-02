@@ -8,6 +8,23 @@
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/templates/hooks/check-architect-init.sh",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/query-hoardinator.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/save-learnings.sh",
+            "timeout": 30
           }
         ]
       }
