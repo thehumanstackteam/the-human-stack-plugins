@@ -17,7 +17,7 @@ Analyze a call transcript through Tim Lockie's Jobs-to-be-Done framework. Produc
 - **JTBD Analyses Data Source**: `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`
 - **Meeting Transcripts DB**: `8368d3474cac4e71bf945934fce957f7`, collection `669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5`
 - **HubSpot Portal**: `22283601`
-- **Database Schema**: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Database-Schema.md`
+- **Database Schema**: Inline below in Step 6b (authoritative source for all valid property values)
 
 ## Workspace Structure
 
@@ -145,58 +145,96 @@ After saving the .md file, create a page in the **JTBD Analyses** database. This
 
 Use `notion-create-pages` with `parent: { data_source_id: "fbf274fd-5cf0-4afe-9eaf-cb511cae6b94" }`.
 
-**Property mapping** — extract these from the completed analysis:
+#### 6a. Page Body Content (MANDATORY -- DO THIS FIRST)
 
-| Property | Source | Notes |
-|----------|--------|-------|
-| Name | File title (e.g., "2025-07-02 - Haley MacDonald, Imagine Canada") | Title property |
-| Organization | Company name from Step 2 | Text |
-| File Path | Full path where .md was saved | Text |
-| Primary JTBD | From `### PRIMARY JTBD` one-sentence synthesis | Text |
-| Engagement Stage | From `CONTEXT METADATA` → Engagement Stage | Select |
-| Product Context | From `CONTEXT METADATA` → Product | Multi-select (array) |
-| Pillar Focus | From `CONTEXT METADATA` → Pillar | Multi-select (array) |
-| Best-Fit Offering | From `### PRODUCT/OFFERING IMPLICATIONS` → Best-Fit Offering | Select |
-| Urgency Level | From `### SWITCH TRIGGER` → Urgency Level | Select |
-| Confidence Score | From `### DETAILED JTBD ANALYSIS` → Confidence Score | Select |
-| Speaker Role | From `CONTEXT METADATA` → Primary Speaker role | Select |
-| Speaker POV | From `CONTEXT METADATA` → Primary Speaker POV | Select |
-| Decision Authority | From `### AUDIENCE SEGMENT` → Decision Authority | Select |
-| Org Size | From `CONTEXT METADATA` → Org Size | Select |
-| Sector | From `CONTEXT METADATA` → Sector | Select |
-| Persona Label | From `### AUDIENCE SEGMENT` → Persona Label | Text |
-| Known Pattern | From `### PATTERN RECOGNITION` → Known Pattern | Text |
-| Emerging Pattern | From `### PATTERN RECOGNITION` → Emerging Pattern | Text |
-| Themes | From analysis themes — map to multi-select tags | Multi-select (array) |
-| Frameworks Applied | From `### IP & FRAMEWORK APPLICATION` → Best-Fit Framework(s) | Multi-select (array) |
-| Quick Summary | From `### QUICK SUMMARY` — concatenate the 5 summary lines | Text |
-| Meeting Transcript | Notion page URL of source transcript (from Step 1, Option C) | URL |
-| Fathom Recording | From CONNECTIONS section | URL |
-| HubSpot Account | From CONNECTIONS section | URL |
-| HubSpot Deal | From CONNECTIONS section | URL |
-| HubSpot Contacts | From CONNECTIONS section — formatted as "Name (link), Name (link)" | Text |
-| Clay URL | From CONNECTIONS section | URL |
+The Notion page body MUST contain the **complete, unmodified analysis text** -- the exact same content saved in the .md file. This is the most important part of the database record.
 
-**Page content**: Paste the full analysis as the page body (same content saved in the .md file).
+**HARD RULES:**
+- Copy the ENTIRE .md file content into the page body. Every section, every quote, every line.
+- Do NOT summarize, truncate, abbreviate, or paraphrase any part of the analysis.
+- Do NOT skip sections to save space or reduce length.
+- Do NOT rewrite headings, quotes, or formatting.
+- The page body must be a verbatim copy of the saved .md file.
+- If the Notion API has length limits, split across multiple content blocks -- never cut content.
 
-**Multi-select values must match exactly.** Use only values that exist in the database schema. If a value from the analysis doesn't match an existing option, omit it rather than creating a new one (unless the user explicitly adds it).
+#### 6b. Property Mapping (exact valid values)
 
-**Themes mapping** — scan the analysis for these theme indicators and tag accordingly:
-- `vendor-dependency` — mentions of consultant/vendor lock-in, outsourced knowledge
-- `tech-trauma` — past failed implementations, burned by technology
-- `lone-wolf` — single person carrying all tech responsibility
-- `permission-to-lead` — seeking validation to make decisions
-- `AI-anxiety` — fear or uncertainty about AI adoption
-- `change-saturation` — too many changes happening at once
-- `bright-shiny-object` — chasing new tools without strategy
-- `training-gap` — staff lack skills to use systems
-- `trust-deficit` — low trust in systems, data, or leadership
-- `silo` — disconnected departments, data, or systems
-- `accidental-techie` — non-technical staff managing technology
-- `governance-vacuum` — no decision framework for technology
-- `channel-partner` — intermediary/partner relationship
-- `strategy-execution-gap` — good strategy but poor implementation
-- `lone-ranger-blocker` — individual blocking organizational progress
+Extract properties from the completed analysis. For select/multi-select fields, use ONLY the exact values listed below. If a value from the analysis doesn't match any listed option, OMIT the field -- never guess or create new values.
+
+**Text properties:**
+
+| Property | Source |
+|----------|--------|
+| Name | File title (e.g., "2025-07-02 - Haley MacDonald, Imagine Canada") |
+| Organization | Company name from Step 2 |
+| Date | Call date from Step 2 (use `date:Date:start` with ISO-8601 date) |
+| File Path | Full path where .md was saved |
+| Primary JTBD | From `### PRIMARY JTBD` one-sentence synthesis |
+| Quick Summary | From `### QUICK SUMMARY` -- concatenate all 5 summary lines |
+| Persona Label | From `### AUDIENCE SEGMENT` -> Persona Label |
+| Known Pattern | From `### PATTERN RECOGNITION` -> Known Pattern |
+| Emerging Pattern | From `### PATTERN RECOGNITION` -> Emerging Pattern |
+| HubSpot Contacts | From CONNECTIONS -- formatted as "Name (link), Name (link)" |
+
+**Select properties (pick exactly ONE from the listed values):**
+
+| Property | Source | Valid Values |
+|----------|--------|-------------|
+| Engagement Stage | `CONTEXT METADATA` -> Engagement Stage | `Pre-sale`, `Discovery`, `Active 0-90`, `Active 90+`, `Alumni` |
+| Best-Fit Offering | `### PRODUCT/OFFERING IMPLICATIONS` | `Coaching`, `Diagnostic`, `Managed Success`, `Training`, `Speaking`, `Upskillerator` |
+| Urgency Level | `### SWITCH TRIGGER` -> Urgency Level | `High`, `Medium`, `Low`, `Unclear` |
+| Confidence Score | `### DETAILED JTBD ANALYSIS` | `High`, `Medium`, `Low` |
+| Speaker Role | `CONTEXT METADATA` -> Primary Speaker role | `CEO/ED`, `COO/VP`, `CTO/Tech Director`, `Program Director`, `Development/Fundraising`, `Operations`, `Board Member`, `Consultant/Partner`, `Other` |
+| Speaker POV | `CONTEXT METADATA` -> Primary Speaker POV | `Executive`, `Practitioner`, `Influencer`, `Champion`, `End User`, `Channel Partner` |
+| Decision Authority | `### AUDIENCE SEGMENT` | `Decision-maker`, `Influencer`, `Champion`, `End User` |
+| Org Size | `CONTEXT METADATA` -> Org Size | `Small (<50)`, `Mid (50-500)`, `Large (500+)` |
+| Sector | `CONTEXT METADATA` -> Sector | `Human Services`, `Education`, `Health`, `Faith-based`, `Infrastructure`, `Arts`, `Environment`, `Cross-sector Consulting`, `Other` |
+
+**Multi-select properties (pick one or more from the listed values, pass as JSON array):**
+
+| Property | Source | Valid Values |
+|----------|--------|-------------|
+| Product Context | `CONTEXT METADATA` -> Product | `Diagnostic`, `Managed Success`, `Training`, `Speaking`, `Consulting` |
+| Pillar Focus | `CONTEXT METADATA` -> Pillar | `Capacity`, `Strategy`, `Transformation` |
+| Frameworks Applied | `### IP & FRAMEWORK APPLICATION` | `Digital Guidance`, `Digital Health Framework`, `Culture Eats Tech`, `Capacity Building`, `Orchestra Metaphor` |
+| Themes | Scan analysis for theme indicators (see below) | `vendor-dependency`, `tech-trauma`, `lone-wolf`, `permission-to-lead`, `AI-anxiety`, `change-saturation`, `bright-shiny-object`, `training-gap`, `trust-deficit`, `silo`, `accidental-techie`, `governance-vacuum`, `channel-partner`, `strategy-execution-gap`, `lone-ranger-blocker` |
+
+**URL properties (omit if value is `[Add link]` or empty):**
+
+| Property | Source |
+|----------|--------|
+| Fathom Recording | From CONNECTIONS section |
+| HubSpot Account | From CONNECTIONS section |
+| HubSpot Deal | From CONNECTIONS section |
+| Clay URL | From CONNECTIONS section |
+
+**Relation property:**
+
+| Property | Source |
+|----------|--------|
+| Meeting Transcript | Notion page URL of source transcript (from Step 1, Option C). This is a relation to collection `669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5`. |
+
+#### 6c. Themes Detection
+
+Scan the analysis for these theme indicators and tag accordingly:
+
+| Theme tag | Indicators in transcript/analysis |
+|-----------|----------------------------------|
+| `vendor-dependency` | consultant/vendor lock-in, outsourced knowledge |
+| `tech-trauma` | past failed implementations, burned by technology |
+| `lone-wolf` | single person carrying all tech responsibility |
+| `permission-to-lead` | seeking validation to make decisions |
+| `AI-anxiety` | fear or uncertainty about AI adoption |
+| `change-saturation` | too many changes happening at once |
+| `bright-shiny-object` | chasing new tools without strategy |
+| `training-gap` | staff lack skills to use systems |
+| `trust-deficit` | low trust in systems, data, or leadership |
+| `silo` | disconnected departments, data, or systems |
+| `accidental-techie` | non-technical staff managing technology |
+| `governance-vacuum` | no decision framework for technology |
+| `channel-partner` | intermediary/partner relationship |
+| `strategy-execution-gap` | good strategy but poor implementation |
+| `lone-ranger-blocker` | individual blocking organizational progress |
 
 ### 7. Enrich Existing Files (Optional)
 

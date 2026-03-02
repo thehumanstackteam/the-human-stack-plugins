@@ -6,8 +6,8 @@ Run Jobs-to-be-Done analysis on call transcripts using Tim Lockie's structured f
 
 - **Analysis Prompt**: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Analysis-Prompt.md`
 - **Synthesis Prompt**: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Synthesis-Prompt.md`
-- **Database Schema**: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Database-Schema.md`
 - **JTBD Analyses Notion DB**: ID `2f218faa725b41828194e8fc0f93453b`, data source `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`
+- **Database Schema**: Inline in `commands/jtbd-analysis.md` Step 6 (authoritative source for all valid property values)
 - **Notion Meeting Transcripts DB**: ID `8368d3474cac4e71bf945934fce957f7`, collection `669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5`
 - **HubSpot Portal**: `22283601`
 
@@ -51,9 +51,9 @@ Jobs To Be Done/
    - Clay URL (if available)
 7. **Save** to `Jobs To Be Done/[Folder]/Calls & Meetings/[Company]/[filename].md`
 8. **Populate JTBD Analyses DB** — create a page in the Notion database (data source `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`) with:
-   - All metadata properties extracted from the analysis (see command file Step 6 for full mapping)
-   - Full analysis pasted as page content
-   - Links to Meeting Transcript, Fathom, HubSpot, Clay from CONNECTIONS section
+   - **Page body**: The COMPLETE analysis text, verbatim (never summarize or truncate)
+   - **Properties**: Using exact valid values from command file Step 6b
+   - **Meeting Transcript**: Two-way relation to source transcript (auto-creates back-link)
 
 ## File Naming
 
@@ -84,9 +84,13 @@ After saving the .md file, always create a JTBD Analyses record. The database se
 parent: { data_source_id: "fbf274fd-5cf0-4afe-9eaf-cb511cae6b94" }
 ```
 
-**Property mapping**: See `commands/jtbd-analysis.md` Step 6 for the complete field-by-field mapping table.
+**CRITICAL -- Page body content comes first.** The complete, unmodified analysis text (the exact .md file content) MUST be pasted as the page body. Do NOT summarize, truncate, or paraphrase. Every section, every quote, every line -- verbatim.
 
-**Multi-select values must match exactly** — only use values that exist in the database schema. Omit rather than create unknown options.
+**Property mapping**: See `commands/jtbd-analysis.md` Step 6b for the complete field-by-field mapping with exact valid values for every select/multi-select field.
+
+**Meeting Transcript** is a two-way relation to the Meeting Transcripts DB (`collection://669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5`). Setting this relation automatically creates a back-link visible on the transcript page under "JTBD Analyses".
+
+**Multi-select values must match exactly** — only use values listed in Step 6b. Omit rather than guess or create unknown options.
 
 ## Enrichment Mode
 
