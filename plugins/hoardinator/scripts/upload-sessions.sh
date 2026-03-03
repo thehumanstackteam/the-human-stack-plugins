@@ -146,7 +146,10 @@ fi
 # Discover batch files
 # ---------------------------------------------------------------------------
 # Sort numerically by the number in batch_NNN.sql
-mapfile -t BATCH_FILES < <(
+BATCH_FILES=()
+while IFS= read -r line; do
+    BATCH_FILES+=("$line")
+done < <(
     find "$INPUT_DIR" -maxdepth 1 -name 'batch_*.sql' -type f \
     | sort -t_ -k2 -n
 )
