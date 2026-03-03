@@ -17,24 +17,15 @@ Aggregate and synthesize insights across multiple JTBD call analyses stored in `
 
 ## Workspace Structure
 
-Analyses are organized into top-level folders:
-
 ```
-Jobs To Be Done/
-├── Diagnostic & Managed Success/
-│   ├── Calls & Meetings/[Company]/     ← source analyses
-│   └── Synthesis/                       ← synthesis reports saved here
-├── Project Evident Coaching/
-│   ├── Calls & Meetings/[Company]/
-│   └── Synthesis/
-├── Webinars & Speaking/
-│   ├── Calls & Meetings/[Company]/
-│   └── Synthesis/
-└── Jobs 2B Done - Plugin & Skills/
-    └── JTBD-Synthesis-Prompt.md         ← synthesis methodology
+/Users/tim/Dev/claude-cowork/Clients/[Organization Name]/
+├── Meetings/
+│   ├── Transcripts/        ← raw transcripts
+│   └── Analysis/           ← JTBD analysis files (source for synthesis)
+└── Synthesis/              ← synthesis reports saved here
 ```
 
-**Always scan for current folders** — new ones may be added at any time.
+Also check legacy paths under `Jobs To Be Done/` for older analyses.
 
 ---
 
@@ -64,7 +55,7 @@ Use the Notion database as the index to identify which analyses to include:
 
 If the Notion DB is not yet backfilled or records are missing:
 1. **Read the synthesis prompt** from: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Synthesis-Prompt.md`
-2. List all `Calls & Meetings/` subdirectories across folders
+2. List all `Meetings/Analysis/` subdirectories under `/Users/tim/Dev/claude-cowork/Clients/` (and legacy `Jobs To Be Done/` paths)
 3. Apply the user's filter (folder, company, date, stage, or all)
 4. Read each matching `.md` analysis file
 5. Also load any existing synthesis reports from `Synthesis/` folders for context on established findings
@@ -228,7 +219,7 @@ If the `Synthesis/` subfolder doesn't exist in the target folder, create it.
 |------|--------|---------|-------------|-------|-------------|
 ```
 
-**Save to**: `Jobs To Be Done/[Folder]/Synthesis/[filename].md`
+**Save to**: `/Users/tim/Dev/claude-cowork/Clients/[Organization Name]/Synthesis/[filename].md` (or `Clients/_Cross-Org/Synthesis/` for cross-org syntheses)
 
 **Always show the user the synthesis before saving** so they can review.
 
