@@ -7,101 +7,106 @@ argument-hint: "[days back, default 7]"
 
 Find unanalyzed meeting transcripts and run JTBD analysis on each. Designed to be run manually (`/jtbd-catchup`) or scheduled via `claude -p "/jtbd-catchup"`.
 
-## Key References
+**DO NOT check the filesystem. DO NOT check the JTBD Analyses DB first. START by querying the Meeting Transcripts Notion database.**
 
-- **Meeting Transcripts DB**: `8368d3474cac4e71bf945934fce957f7`, collection `669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5`
-- **JTBD Analyses DB**: `2f218faa725b41828194e8fc0f93453b`, data source `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`
-
-## Workflow
-
-### 1. Determine Time Window
+## Step 1: Determine Time Window
 
 - If `$ARGUMENTS` is a number, use that as days back (e.g., `/jtbd-catchup 14` = past 14 days)
 - If no argument, default to **7 days**
 - Calculate the cutoff date: today minus N days
 
-### 2. Find Unanalyzed or Outdated Transcripts
+## Step 2: Query the Meeting Transcripts Database
 
-Query the **Meeting Transcripts** Notion DB for recent transcripts that need analysis (new or outdated):
+**This is a Notion database query. Use the Notion MCP tools.**
 
-1. Use `notion-query-database-view` with data source `collection://669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5`
-2. Filter: created date >= cutoff date
-3. For each transcript, check the **JTBD Analyses** relation property:
-   - **Empty** → needs analysis (new)
-   - **Has relation** → fetch the linked JTBD Analyses page and check the `Plugin Version` property
+Query this specific Notion database:
+- **Database URL**: https://www.notion.so/thehumanstack/8368d3474cac4e71bf945934fce957f7
+- **Data source**: `collection://669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5`
 
-#### Version Check
+Use `notion-query-database-view` with:
+```
+data_source_url: "collection://669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5"
+```
 
-For transcripts that already have an analysis, compare the analysis's `Plugin Version` against the current plugin version (`5.0.0`):
+Filter for transcripts created in the past N days. This returns the list of **all recent meeting transcripts**.
 
-- **No `Plugin Version` property** → pre-v5, needs upgrade
-- **Version < current** → outdated, needs upgrade
-- **Version = current** → up to date, skip
+## Step 3: For Each Transcript, Check if a JTBD Analysis Exists
 
-#### Categorize Results
+Each transcript page in the Meeting Transcripts DB has a **"JTBD Analyses"** relation property. This relation links to the JTBD Analyses DB (`collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`).
 
-Group transcripts into three buckets:
-- **New** — no analysis exists
-- **Outdated** — analysis exists but was created by an older plugin version
-- **Current** — analysis exists at current version (skip these)
+For each transcript returned in Step 2:
+1. Check the **"JTBD Analyses"** relation on the transcript page
+2. If the relation is **empty** → this transcript has NO analysis → mark as **"New"**
+3. If the relation has a value → fetch that JTBD Analyses page and check its `Plugin Version` property:
+   - No `Plugin Version` or version < `5.0.0` → mark as **"Outdated"**
+   - Version = `5.0.0` → mark as **"Current"** (skip)
 
-### 3. Report Findings
-
-Before launching agents, report to the user:
+## Step 4: Report Findings
 
 ```
-Found [N] transcripts needing work in the past [days] days:
+Checked [total] transcripts from the past [N] days:
 
 New (no analysis):
 1. [Date] - [Title] - [Organization]
+2. [Date] - [Title] - [Organization]
 
-Outdated (needs upgrade from v[X] to v5.0.0):
-2. [Date] - [Title] - [Organization] — missing: SERIES, EXPECTATION MAP
-3. [Date] - [Title] - [Organization] — missing: EXPECTATION MAP
+Outdated (needs upgrade):
+3. [Date] - [Title] - [Organization] — v4.1.0, missing: SERIES, EXPECTATION MAP
 
 Up to date: [M] transcripts (skipped)
 
 Launching [K] background agents.
 ```
 
-If nothing needs work, report that and exit.
+If nothing needs work, report "All [total] transcripts from the past [N] days have current analyses." and exit.
 
-### 4. Dispatch Background Agents
+## Step 5: Dispatch Background Agents
 
-Handle each transcript based on its category:
+### For "New" transcripts (no analysis exists)
 
-#### New Transcripts (no analysis exists)
-
-For each, launch a background agent following the JTBD Analysis dispatch pattern (see `jtbd-analysis.md` Dispatch Architecture):
-
-1. **Read the transcript** from Notion using `notion-fetch`
-2. **Extract** company name, participants, date from the transcript content and properties
-3. **Launch background agent** with the full transcript text and context
+1. Fetch the full transcript content using `notion-fetch` with the transcript's page URL
+2. Extract company name, participants, date from the transcript content and properties
+3. Launch a background agent with the full transcript:
 
 ```
 Agent(
   subagent_type: "general-purpose",
   description: "JTBD Catchup: {company} ({date})",
   run_in_background: true,
-  prompt: "You are the autonomous JTBD analysis runner...
-    [same prompt template as jtbd-analysis.md Dispatch Architecture]
-    ...with this transcript:
-    {full_transcript_text}"
+  prompt: "You are the autonomous JTBD analysis runner. Run the FULL analysis
+    pipeline without stopping. Never ask questions. Never wait for approval.
+
+    ## Input
+    Company: {company}
+    Participants: {participants}
+    Call Date: {date}
+    Save Path: /Users/tim/Dev/claude-cowork/Clients/{company}/Meetings/Analysis/
+    Transcript Source: {notion_transcript_url}
+
+    ## Transcript
+    {full_transcript_text}
+
+    ## Instructions
+    Follow the JTBD Analysis command (jtbd-analysis.md) Steps 2b through 6:
+    - Create directory structure if needed
+    - Step 2b: Query JTBD Analyses DB for series context
+    - Step 3: Run full 9-dimension JTBD analysis
+    - Step 4: Build CONNECTIONS section (run CRM lookups)
+    - Step 5: Save .md file
+    - Step 5b: Run uxinator:expectation-mapper against the raw transcript, append output
+    - Step 6: Push to Notion JTBD Analyses DB (full text, use curl fallback if MCP truncates)
+    - Set Plugin Version to 5.0.0
+
+    Do NOT stop on errors. Retry once, log, and continue.
+    Do NOT prompt the user about anything."
 )
 ```
 
-#### Outdated Transcripts (analysis exists, older version)
+### For "Outdated" transcripts (analysis exists, older version)
 
-For each, launch a background agent that upgrades the existing analysis using the batch upgrade logic (see `jtbd-analysis.md` Step 7b):
-
-1. **Fetch the existing analysis** from the Notion JTBD Analyses page
-2. **Fetch the raw transcript** from the linked Meeting Transcript relation
-3. **Determine what's missing** based on version (e.g., pre-v5 = missing SERIES + EXPECTATION MAP)
-4. **Backfill missing sections**:
-   - SERIES: Query DB for session count, insert after CONTEXT METADATA
-   - EXPECTATION MAP: Run `uxinator:expectation-mapper` against the raw transcript, append
-   - Plugin Version: Add/update to current version
-5. **Update both** the local .md file and the Notion page body (full text, no truncation)
+1. Fetch the existing JTBD Analyses page content
+2. Fetch the raw transcript from the linked Meeting Transcript
+3. Launch a background agent to upgrade:
 
 ```
 Agent(
@@ -109,56 +114,54 @@ Agent(
   description: "JTBD Upgrade: {company} ({date}) v{old} -> v5.0.0",
   run_in_background: true,
   prompt: "You are the autonomous JTBD upgrade runner.
-    Upgrade this existing analysis to v5.0.0.
+    Upgrade this existing analysis to v5.0.0. Do NOT re-run the full analysis.
 
-    ## Existing Analysis (Notion page)
-    {notion_page_url}
+    ## Existing Analysis
+    Notion page: {analysis_notion_url}
 
-    ## Raw Transcript (for Expectation Map)
-    {transcript_notion_url}
+    ## Raw Transcript
+    Notion page: {transcript_notion_url}
 
     ## Missing Sections
     {list of what needs to be added}
 
     ## Instructions
-    - Fetch the existing analysis page content
-    - Fetch the raw transcript
-    - Add missing sections per jtbd-analysis.md Step 7b
-    - Update Plugin Version to 5.0.0
-    - Update the local .md file at {file_path}
+    - Fetch the existing analysis page content from Notion
+    - Fetch the raw transcript from Notion
+    - Add SERIES section after CONTEXT METADATA (query DB for session count)
+    - Run uxinator:expectation-mapper against raw transcript, append as EXPECTATION MAP
+    - Add Plugin Version: 5.0.0 to CONTEXT METADATA
+    - Update the local .md file at the File Path property value
     - Update the Notion page body with FULL text (use curl fallback if needed)
     - Update the Plugin Version property on the Notion DB record
 
-    Do NOT re-run the full JTBD analysis. Only add the missing sections.
-    Do NOT modify existing sections."
+    Do NOT modify existing analysis sections.
+    Do NOT re-run the JTBD analysis. Only add missing sections."
 )
 ```
 
-**Launch all agents (new + upgrade) in a single message** for maximum parallelism.
+**Launch all agents in a single message** for maximum parallelism.
 
-### 5. Summary
+## Step 6: Summary
 
-After dispatching all agents, tell the user:
-- How many analyses are running
-- Where files will be saved (`/Users/tim/Dev/claude-cowork/Clients/[Org]/Meetings/Analysis/`)
-- That each will also push to the JTBD Analyses Notion DB
+After dispatching, tell the user:
+- How many analyses are running (new + upgrade)
+- Where files will be saved
 - Do NOT block waiting for results
 
 ## Scheduling
 
-This command is designed for `claude -p` automation:
-
 ```bash
-# Run weekly via cron (Sunday night)
-0 22 * * 0 claude -p "/jtbd-catchup 7" --allowedTools '*'
-
-# Run daily catchup
+# Daily catchup at 6am
 0 6 * * * claude -p "/jtbd-catchup 1" --allowedTools '*'
+
+# Weekly catchup Sunday night
+0 22 * * 0 claude -p "/jtbd-catchup 7" --allowedTools '*'
 ```
 
-## Important Notes
+## Rules
 
-- Transcripts that are cancellations, rescheduling notices, or non-substantive should be skipped. Check the transcript title and content -- if it's clearly not a real session, skip it.
-- If a transcript has fewer than 500 words of actual conversation, skip it and log as "too short."
-- Each background agent runs the full pipeline: JTBD analysis, series context, expectation map, CRM lookups, file save, Notion push.
+- **ALWAYS start with the Notion Meeting Transcripts database query.** Never check the filesystem first.
+- Transcripts that are cancellations or non-substantive (< 500 words) → skip and log
 - This command never asks questions. It finds work, dispatches it, and reports.
+- Each background agent runs autonomously — do not block waiting for results.
