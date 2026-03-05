@@ -11,14 +11,18 @@ Analyze a call transcript through Tim Lockie's Jobs-to-be-Done framework with UX
 
 **Related commands:** Use after sales calls (pairs with `sales:call-summary`), for product research synthesis (pairs with `product-management:synthesize-research`), and for productivity tracking (pairs with `productivity:update`).
 
-## Dispatch Architecture
+## Dispatch Architecture (Two-Phase)
 
-**This command runs as a background agent.** The main conversation is a thin dispatcher:
+**This command uses a two-phase dispatch.** The background agent writes the .md file ONLY. The foreground dispatcher handles the Notion push deterministically — no LLM judgment on content.
+
+**Why two phases:** Background agents consistently editorialize Notion page content (summarizing, truncating, posting stubs) despite explicit verbatim-copy instructions. The fix is architectural: the agent never touches Notion. The foreground reads the .md file back as raw text and pushes it verbatim.
+
+### Phase 1: Background Agent (Steps 2b → 5b — analysis + file save)
 
 1. **Read** this command file and the SKILL.md
-2. **Acquire the transcript** (Step 1 only -- this happens in the foreground so the user can provide input)
-3. **Extract company, participants, date** from the transcript (Step 2 -- no user input needed, path is deterministic)
-4. **Launch a background agent** for everything else (Steps 2b through 6)
+2. **Acquire the transcript** (Step 1 only — foreground, may need user input)
+3. **Extract company, participants, date** (Step 2 — foreground, deterministic)
+4. **Launch background agent** for Steps 2b through 5b ONLY
 
 ```
 Agent(
@@ -40,14 +44,27 @@ Agent(
     {full_transcript_text}
 
     ## Instructions
-    Follow the JTBD Analysis command Steps 2b through 6:
+    Follow the JTBD Analysis command Steps 2b through 5b ONLY:
     - Create directory structure if needed (Meetings/Analysis/, Meetings/Transcripts/, Synthesis/)
     - Step 2b: Query JTBD Analyses DB for series context
     - Step 3: Run full 9-dimension JTBD analysis
     - Step 4: Build CONNECTIONS section (run CRM lookups)
     - Step 5: Save .md file to Meetings/Analysis/
     - Step 5b: Run uxinator:expectation-mapper against the raw transcript, append output
-    - Step 6: Push to Notion (full text, use curl fallback if MCP truncates)
+
+    YOUR JOB ENDS AT STEP 5b. Do NOT push to Notion. Do NOT create Notion pages.
+    Do NOT call notion-create-pages, notion-update-page, or any Notion write tool.
+    The foreground dispatcher handles Notion (Step 6) after you finish.
+
+    When complete, output EXACTLY this status block and nothing else after it:
+    ```
+    JTBD_COMPLETE
+    FILE_PATH: {full path to saved .md file}
+    ORGANIZATION: {company name}
+    CALL_DATE: {ISO date}
+    TRANSCRIPT_SOURCE: {notion_page_id or 'pasted'}
+    FATHOM_URL: {url or '[Add link]'}
+    ```
 
     Do NOT stop on errors. Retry once, log, and continue.
     Do NOT prompt the user about anything.
@@ -65,10 +82,34 @@ Agent(
 )
 ```
 
-**After dispatching**, tell the user:
+**After dispatching Phase 1**, tell the user:
 - "JTBD analysis for {company} is running in the background."
-- "It will save to `{file_path}` and push to the JTBD Analyses Notion DB."
-- Do NOT block waiting for results.
+- "When it finishes, I'll push the full analysis to the JTBD Analyses Notion DB."
+
+### Phase 2: Foreground Notion Push (Step 6 — deterministic, no LLM judgment)
+
+**When the background agent completes**, the foreground dispatcher runs Step 6:
+
+1. **Parse the status block** from the agent output to get `FILE_PATH`, `ORGANIZATION`, `CALL_DATE`, `TRANSCRIPT_SOURCE`, `FATHOM_URL`
+2. **Read the .md file** from disk using the Read tool — this is raw file content, not an LLM summary
+3. **Extract properties** from the .md content using deterministic parsing (regex/string matching on section headers — see Step 6b for field mapping)
+4. **Call `notion-create-pages`** with:
+   - `parent: { data_source_id: "fbf274fd-5cf0-4afe-9eaf-cb511cae6b94" }`
+   - `content`: the ENTIRE .md file content from step 2 — passed through verbatim, no modifications
+   - `properties`: extracted in step 3
+5. **Verify** by fetching the created page and comparing byte-length to the .md file. If the Notion page is significantly shorter (~80% threshold), use the curl fallback (Step 6a) to append missing content.
+
+**CRITICAL: The foreground dispatcher MUST NOT paraphrase, summarize, restructure, or editorialize the .md content. The content parameter is a direct passthrough of the file bytes.**
+
+**In batch mode**, Phase 2 runs as a loop after all agents complete:
+```
+for each completed agent:
+  1. read FILE_PATH from agent status block
+  2. file_content = Read(FILE_PATH)
+  3. properties = extract_properties(file_content)  # deterministic string parsing
+  4. notion-create-pages(content=file_content, properties=properties)
+  5. verify page content length vs .md file length
+```
 
 ## Key References
 
@@ -147,7 +188,7 @@ If this organization has prior JTBD analyses, this call is part of a **series**.
 **Add a `Plugin Version` line** at the bottom of `## CONTEXT METADATA`:
 
 ```markdown
-**Plugin Version**: 5.0.0
+**Plugin Version**: 6.0.0
 ```
 
 **Add a `## SERIES` section** immediately after `## CONTEXT METADATA` in the analysis output:
@@ -236,28 +277,28 @@ This bridges JTBD (what the client needs) with UX (what expectations exist and w
 
 **For series sessions (Session 2+):** When invoking the expectation-mapper, also provide the previous session's JTBD analysis (fetched from Notion in Step 2b) as additional context so the skill can identify how expectations have shifted.
 
-### 6. Populate JTBD Analyses Notion Database
+### 6. Populate JTBD Analyses Notion Database (FOREGROUND ONLY)
 
-After saving the .md file, create a page in the **JTBD Analyses** database. This is the structured, queryable layer that links back to the full analysis and the source transcript.
+**This step runs in the foreground dispatcher, NEVER in the background agent.** See "Phase 2" in the Dispatch Architecture section above.
+
+After the background agent saves the .md file and outputs its status block, the foreground dispatcher reads the file back from disk and pushes it to Notion. This eliminates LLM editorial decisions on page content.
 
 **Database**: `2f218faa725b41828194e8fc0f93453b`
 **Data source**: `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`
 
 Use `notion-create-pages` with `parent: { data_source_id: "fbf274fd-5cf0-4afe-9eaf-cb511cae6b94" }`.
 
-#### 6a. Page Body Content (MANDATORY -- DO THIS FIRST)
+#### 6a. Page Body Content (deterministic file passthrough)
 
-The Notion page body MUST contain the **complete, unmodified analysis text** -- the exact same content saved in the .md file. This includes all sections: CONTEXT METADATA, SERIES, PRIMARY JTBD, DETAILED JTBD ANALYSIS, SWITCH TRIGGER, DESIRED OUTCOME, OBSTACLES & ANXIETIES, MESSAGING GOLD, AUDIENCE SEGMENT, IP & FRAMEWORK APPLICATION, PRODUCT/OFFERING IMPLICATIONS, PATTERN RECOGNITION, CONNECTIONS, and EXPECTATION MAP.
+The foreground dispatcher reads the .md file using the Read tool and passes the entire file content as the `content` parameter to `notion-create-pages`. No LLM interpretation, no summarization, no restructuring.
 
-**HARD RULES:**
-- Copy the ENTIRE .md file content into the page body. Every section, every quote, every line.
-- Do NOT summarize, truncate, abbreviate, or paraphrase any part of the analysis.
-- Do NOT skip sections to save space or reduce length.
-- Do NOT rewrite headings, quotes, or formatting.
-- The page body must be a verbatim copy of the saved .md file.
-- If the Notion API has length limits, split across multiple content blocks -- never cut content.
+**Procedure:**
+1. `file_content = Read(FILE_PATH)` — raw file bytes from disk
+2. `notion-create-pages(content=file_content, ...)` — direct passthrough
+3. Fetch the created page back with `notion-fetch` and compare content length
+4. If the page is significantly shorter than the .md file (~80% threshold), use the curl fallback below
 
-**FULL-TEXT FALLBACK:** If the MCP `notion-create-pages` tool truncates or drops content (e.g., the page body is shorter than the .md file), use the Notion API directly via curl to append the missing content. Use the `NOTION_API_KEY` environment variable:
+**FULL-TEXT FALLBACK:** If the MCP `notion-create-pages` tool truncates or drops content, use the Notion API directly via curl to append the missing content. Use the `NOTION_API_KEY` environment variable:
 
 ```bash
 curl -X PATCH "https://api.notion.com/v1/blocks/{block_id}/children" \
@@ -267,7 +308,7 @@ curl -X PATCH "https://api.notion.com/v1/blocks/{block_id}/children" \
   -d '{json_body_with_remaining_content}'
 ```
 
-Split long content into paragraph blocks of ~2000 characters each. After pushing, fetch the page back with `notion-fetch` and verify the full content is present. If any section is missing, append it.
+Split long content into paragraph blocks of ~2000 characters each.
 
 #### 6b. Property Mapping (exact valid values)
 
@@ -287,7 +328,7 @@ Extract properties from the completed analysis. For select/multi-select fields, 
 | Known Pattern | From `### PATTERN RECOGNITION` -> Known Pattern |
 | Emerging Pattern | From `### PATTERN RECOGNITION` -> Emerging Pattern |
 | HubSpot Contacts | From CONNECTIONS -- formatted as "Name (link), Name (link)" |
-| Plugin Version | Always set to current plugin version (currently `5.0.0`) |
+| Plugin Version | Always set to current plugin version (currently `6.0.0`) |
 
 **Select properties (pick exactly ONE from the listed values):**
 
@@ -424,8 +465,13 @@ When adding new sections to the plugin in future versions:
 
 ## Background Execution
 
-When running as a background agent or in batch mode:
+When running as a background agent (Phase 1):
+- **Agent scope is Steps 2b → 5b ONLY.** The agent writes the .md file and outputs a status block. It does NOT touch Notion.
 - **Do NOT stop or ask for confirmation** on Bash tool failures. If a curl or API call fails, retry once, then log the error and continue with the next step.
 - **Do NOT prompt the user** about file permissions, directory creation, or tool errors. Handle them silently.
+- **Do NOT call any Notion write tools** (notion-create-pages, notion-update-page, etc.). The foreground dispatcher handles all Notion operations in Phase 2.
 - The only user interaction point is Step 5 ("show the user the completed analysis before saving"). In background mode, skip this and save directly.
-- If the MCP Notion tools fail, fall back to the curl-based Notion API approach (see Step 6a) without asking.
+
+When the foreground dispatcher runs Phase 2 (Notion push):
+- Read the .md file from disk — pass through verbatim as page content.
+- If the MCP Notion tools truncate, fall back to the curl-based Notion API approach (see Step 6a).

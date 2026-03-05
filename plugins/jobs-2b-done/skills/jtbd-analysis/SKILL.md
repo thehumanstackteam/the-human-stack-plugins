@@ -49,14 +49,15 @@ Create the directory structure if it doesn't exist.
    - Clay URL (if available)
 8. **Run UXinator expectation-mapper** against the raw transcript (NOT the JTBD analysis) and append the full output as the final `## EXPECTATION MAP` section
 9. **Save** to `/Users/tim/Dev/claude-cowork/Clients/[Org Name]/Meetings/Analysis/[filename].md`
-10. **Populate JTBD Analyses DB** — create a page in the Notion database (data source `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`) with:
-    - **Page body**: The COMPLETE analysis text, verbatim — all sections including SERIES and EXPECTATION MAP (never summarize or truncate)
-    - **Properties**: Using exact valid values from command file Step 6b
+10. **Populate JTBD Analyses DB** (FOREGROUND ONLY — see Dispatch Architecture) — the foreground dispatcher reads the saved .md file from disk and pushes it to Notion:
+    - **Page body**: The raw .md file content, read from disk and passed through verbatim — no LLM interpretation
+    - **Properties**: Extracted from the .md via deterministic string parsing (see command file Step 6b)
     - **Meeting Transcript**: Two-way relation to source transcript (auto-creates back-link)
+    - The background agent NEVER touches Notion. This step is always foreground.
 
 ## Output Sections (in order)
 
-1. CONTEXT METADATA (includes `Plugin Version: 5.0.0` at bottom)
+1. CONTEXT METADATA (includes `Plugin Version: 6.0.0` at bottom)
 2. SERIES (session number, previous session link, JTBD evolution)
 3. PRIMARY JTBD
 4. DETAILED JTBD ANALYSIS
@@ -93,38 +94,51 @@ Create the directory structure if it doesn't exist.
 - Intensity = importance
 - Context matters (prospect vs. 90-day client)
 
-## Notion DB Population
+## Notion DB Population (FOREGROUND ONLY)
 
 After saving the .md file, always create a JTBD Analyses record. The database serves as the queryable, filterable index across all analyses. The .md file remains the authoritative full-text source.
+
+**This step runs in the foreground dispatcher, NEVER in the background agent.** The background agent writes the .md file and outputs a status block. The foreground reads the .md back from disk and pushes it to Notion. This eliminates LLM editorial decisions on page content.
 
 **Use `notion-create-pages`** with:
 ```
 parent: { data_source_id: "fbf274fd-5cf0-4afe-9eaf-cb511cae6b94" }
 ```
 
-**CRITICAL -- Page body content comes first.** The complete, unmodified analysis text (the exact .md file content) MUST be pasted as the page body. Do NOT summarize, truncate, or paraphrase. Every section, every quote, every line -- verbatim. This includes the SERIES section and the EXPECTATION MAP section.
+**Page body is a deterministic file passthrough:**
+1. `file_content = Read(FILE_PATH)` — raw file content from disk
+2. `notion-create-pages(content=file_content, ...)` — direct passthrough, no modifications
+3. Verify by fetching the page back and comparing content length to the .md file
+4. If significantly shorter (~80% threshold), use curl fallback (see command Step 6a)
 
-**Full-text fallback**: If MCP tools truncate content, use the Notion API directly via curl with `$NOTION_API_KEY` to append missing blocks. See command Step 6a for details.
-
-**Property mapping**: See `commands/jtbd-analysis.md` Step 6b for the complete field-by-field mapping with exact valid values for every select/multi-select field.
+**Property mapping**: See `commands/jtbd-analysis.md` Step 6b for the complete field-by-field mapping with exact valid values for every select/multi-select field. Properties are extracted from the .md content via deterministic string parsing (regex on section headers), not LLM summarization.
 
 **Meeting Transcript** is a two-way relation to the Meeting Transcripts DB (`collection://669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5`). Setting this relation automatically creates a back-link visible on the transcript page under "JTBD Analyses".
 
 **Multi-select values must match exactly** — only use values listed in Step 6b. Omit rather than guess or create unknown options.
 
-## Dispatch Architecture
+## Dispatch Architecture (Two-Phase)
 
-**This skill dispatches as a background agent.** The main conversation handles only transcript acquisition (Step 1) and company/folder identification (Step 2) in the foreground -- these may require user input. Everything else (Steps 2b-6) runs as a single background agent:
+**This skill uses a two-phase dispatch.** The background agent writes the .md file ONLY. The foreground dispatcher handles the Notion push deterministically.
 
-1. Foreground: Acquire transcript, extract company/participants/date (no user input needed for path -- it's deterministic)
-2. Background agent: Series context, JTBD analysis, CRM lookups, UXinator expectation map, file save, Notion push
+**Why two phases:** Background agents consistently editorialize Notion page content (summarizing, truncating, posting stubs) despite explicit verbatim-copy instructions. The fix is architectural: the agent never touches Notion.
 
-See `commands/jtbd-analysis.md` Dispatch Architecture section for the full agent prompt template.
+### Phase 1: Background Agent (Steps 2b → 5b)
+1. Foreground: Acquire transcript, extract company/participants/date
+2. Background agent: Series context, JTBD analysis, CRM lookups, UXinator expectation map, file save
+3. Agent outputs a status block with FILE_PATH, ORGANIZATION, CALL_DATE, TRANSCRIPT_SOURCE, FATHOM_URL
 
-**Background rules:**
-- Do not stop for Bash tool errors -- retry once, then log and continue.
+### Phase 2: Foreground Notion Push (Step 6)
+1. Foreground reads the .md file from disk (Read tool — raw bytes, no LLM interpretation)
+2. Foreground calls `notion-create-pages` with file content as direct passthrough
+3. Foreground verifies page content length vs .md file length
+
+See `commands/jtbd-analysis.md` Dispatch Architecture section for the full agent prompt template and Phase 2 procedure.
+
+**Background agent rules:**
+- Agent scope is Steps 2b → 5b ONLY. Agent does NOT call any Notion write tools.
+- Do not stop for Bash tool errors — retry once, then log and continue.
 - Do not prompt about file permissions or directory creation.
-- If MCP Notion tools fail, fall back to curl-based API calls silently.
 - Skip the user review step and save directly.
 
 ## Backwards Compatibility & Batch Upgrade
