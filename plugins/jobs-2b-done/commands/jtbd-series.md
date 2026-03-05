@@ -37,7 +37,7 @@ Query the **JTBD Analyses DB** for this organization to find which transcripts h
 1. Filter by `Organization` matching the org name
 2. For each record, check:
    - `Meeting Transcript` relation -- which transcript does it cover?
-   - `Plugin Version` property -- is it current (`5.0.0`)?
+   - `Plugin Version` property -- is it current (`6.1.0`)?
 3. Categorize each transcript:
    - **Current** -- has analysis at current plugin version (skip)
    - **Outdated** -- has analysis but older plugin version (needs upgrade)
@@ -49,7 +49,7 @@ Query the **JTBD Analyses DB** for this organization to find which transcripts h
 Series: [Organization Name]
 Total transcripts found: [N]
 
-Current (v5.0.0): [A] sessions (skipped)
+Current (v6.1.0): [A] sessions (skipped)
 Outdated (needs upgrade): [B] sessions
   - Session 3 (2025-04-16) — v4.1.0, missing: SERIES, EXPECTATION MAP
   - Session 5 (2025-05-14) — v4.1.0, missing: SERIES, EXPECTATION MAP
@@ -64,65 +64,27 @@ If ALL transcripts are current, report that and offer to run a synthesis instead
 
 ### 5. Dispatch Sequential Processing
 
-Series processing MUST run sequentially (not in parallel) because each session's SERIES section references the previous one. The background agent handles the full chain, doing the right thing for each session based on its category:
+**Use the two-phase dispatch from SKILL.md** for each session. The key difference from catchup is that series runs **sequentially, not in parallel** -- each session's SERIES section references the previous one.
 
-```
-Agent(
-  subagent_type: "general-purpose",
-  description: "JTBD Series: {org} (Sessions {start}-{end})",
-  run_in_background: true,
-  prompt: "You are the autonomous JTBD series runner.
-    Process each session IN ORDER. Each builds on the previous.
-    Never ask questions. Never wait for approval.
+#### For "New" sessions (full analysis)
 
-    ## Organization
-    {org_name}
+For each new session in chronological order:
+1. Fetch the full transcript content using `notion-fetch`
+2. Extract company name, participants, date
+3. **Include series context**: list of prior sessions (Current + already-processed) so the agent can build the SERIES section and reference how expectations shifted
+4. Launch a background agent using the **Phase 1 template from SKILL.md**, adding series context to the prompt
+5. **Wait for completion** before starting the next session
+6. Run **Phase 2 from SKILL.md** (Notion push) before moving to the next session
 
-    ## Sessions to Process (in chronological order)
+#### For "Outdated" sessions (upgrade only)
 
-    ### Current (skip, but use for series context)
-    - Session 1: {notion_url} — v5.0.0 (up to date)
-    - Session 2: {notion_url} — v5.0.0 (up to date)
+Use the same upgrade agent template as jtbd-catchup (see Step 5, "Outdated" section). Process sequentially with Phase 2 after each.
 
-    ### Outdated (upgrade only -- do NOT re-run full analysis)
-    - Session 3: {notion_analysis_url} — v4.1.0
-      Transcript: {transcript_url}
-      Missing: SERIES, EXPECTATION MAP, Plugin Version
-      Action: Add missing sections, update version to 5.0.0
+#### Series-specific rules
 
-    ### New (full analysis)
-    - Session 8: {transcript_url} — no analysis
-      Action: Run full JTBD analysis pipeline
-
-    ## For OUTDATED Sessions
-    1. Fetch the existing analysis from Notion
-    2. Fetch the raw transcript
-    3. Add SERIES section (referencing previous session)
-    4. Run uxinator:expectation-mapper against raw transcript, append EXPECTATION MAP
-    5. Add/update Plugin Version to 5.0.0
-    6. Update local .md file AND Notion page body (full text, curl fallback)
-    7. Update Plugin Version property on Notion DB record
-    Do NOT modify existing JTBD analysis sections.
-
-    ## For NEW Sessions
-    1. Fetch the transcript from Notion using notion-fetch
-    2. Run the full JTBD analysis (Steps 3-6 from jtbd-analysis.md)
-    3. The SERIES section must reference the PREVIOUS session's analysis
-    4. The EXPECTATION MAP must reference how expectations shifted
-    5. Save .md file to /Users/tim/Dev/claude-cowork/Clients/{org}/Meetings/Analysis/
-    6. Push to Notion JTBD Analyses DB with full text
-    7. WAIT for Notion push to complete before starting the next session
-
-    ## JTBD Analysis SKILL.md
-    {paste full SKILL.md content}
-
-    ## Error Handling
-    - If a transcript is too short (<500 words), skip it and log
-    - If a transcript is a cancellation, skip and log
-    - If Notion push fails, use curl fallback, then continue to next
-    - Log progress after each session: 'Completed Session {N} of {total}'"
-)
-```
+- **Sequential, not parallel** -- launch one agent at a time, wait for completion + Phase 2, then proceed to next
+- **Series context** -- each agent receives the list of prior sessions (both existing and just-completed) so it can build accurate SERIES sections and track JTBD evolution
+- **Long series (20+ sessions)** -- process in batches of 10 to avoid context limits, chaining agents for the next batch
 
 ### 6. After Completion
 
