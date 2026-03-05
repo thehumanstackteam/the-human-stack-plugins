@@ -4,8 +4,7 @@ Run Jobs-to-be-Done analysis on call transcripts using Tim Lockie's structured f
 
 ## Quick Reference
 
-- **Analysis Prompt**: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Analysis-Prompt.md`
-- **Synthesis Prompt**: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Synthesis-Prompt.md`
+- **Analysis Framework**: Inline in this SKILL.md (Output Sections + Analysis Rules)
 - **JTBD Analyses Notion DB**: ID `2f218faa725b41828194e8fc0f93453b`, data source `collection://fbf274fd-5cf0-4afe-9eaf-cb511cae6b94`
 - **Database Schema**: Inline in `commands/jtbd-analysis.md` Step 6 (authoritative source for all valid property values)
 - **Notion Meeting Transcripts DB**: ID `8368d3474cac4e71bf945934fce957f7`, collection `669e7e0b-dfe6-43c4-b4c3-d7b734e06ed5`
@@ -38,8 +37,7 @@ Create the directory structure if it doesn't exist.
 2. **Extract** company name, participants, call date
 3. **Determine series context** — query JTBD Analyses DB for same Organization to get session number and link to previous session (see command Step 2b)
 4. **Create directory** — path is always `/Users/tim/Dev/claude-cowork/Clients/[Org Name]/Meetings/Analysis/` (never ask, fuzzy-match existing org folders)
-5. **Read `JTBD-Analysis-Prompt.md`** fresh every time (it evolves)
-6. **Run full 9-dimension analysis** per the prompt
+5. **Run full 9-dimension analysis** per this skill's framework (Output Sections + Analysis Rules)
 7. **Build CONNECTIONS section** at top of output:
    - Fathom Recording link
    - Notion Meeting Notes link
@@ -49,7 +47,8 @@ Create the directory structure if it doesn't exist.
    - Clay URL (if available)
 8. **Run UXinator expectation-mapper** against the raw transcript (NOT the JTBD analysis) and append the full output as the final `## EXPECTATION MAP` section
 9. **Save** to `/Users/tim/Dev/claude-cowork/Clients/[Org Name]/Meetings/Analysis/[filename].md`
-10. **Populate JTBD Analyses DB** (FOREGROUND ONLY — see Dispatch Architecture) — the foreground dispatcher reads the saved .md file from disk and pushes it to Notion:
+10. **Backfill Meeting Transcript Organization** — if the source was a Notion Meeting Transcript and its Organization field is empty, update it with the company name from Step 2
+11. **Populate JTBD Analyses DB** (FOREGROUND ONLY — see Dispatch Architecture) — the foreground dispatcher reads the saved .md file from disk and pushes it to Notion:
     - **Page body**: The raw .md file content, read from disk and passed through verbatim — no LLM interpretation
     - **Properties**: Extracted from the .md via deterministic string parsing (see command file Step 6b)
     - **Meeting Transcript**: Two-way relation to source transcript (auto-creates back-link)

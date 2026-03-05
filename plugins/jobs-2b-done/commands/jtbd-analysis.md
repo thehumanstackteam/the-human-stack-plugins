@@ -76,9 +76,9 @@ Agent(
     Invoke the uxinator:expectation-mapper skill with the raw transcript.
     Append the FULL output under ## EXPECTATION MAP at the end of the document.
 
-    ## JTBD Analysis Prompt
-    {paste JTBD-Analysis-Prompt.md content if it exists, otherwise use the
-     9-dimension framework from the SKILL.md}"
+    ## JTBD Analysis Framework
+    Use the 9-dimension framework from the SKILL.md (Output Sections + Analysis Rules).
+    Do NOT look for an external JTBD-Analysis-Prompt.md file."
 )
 ```
 
@@ -98,6 +98,7 @@ Agent(
    - `content`: the ENTIRE .md file content from step 2 — passed through verbatim, no modifications
    - `properties`: extracted in step 3
 5. **Verify** by fetching the created page and comparing byte-length to the .md file. If the Notion page is significantly shorter (~80% threshold), use the curl fallback (Step 6a) to append missing content.
+6. **Backfill Meeting Transcript Organization** — if `TRANSCRIPT_SOURCE` is a Notion page ID (not 'pasted'), fetch the source transcript page and check its `Organization` property. If empty, update it with `ORGANIZATION` from the status block using `notion-update-page`.
 
 **CRITICAL: The foreground dispatcher MUST NOT paraphrase, summarize, restructure, or editorialize the .md content. The content parameter is a direct passthrough of the file bytes.**
 
@@ -206,9 +207,9 @@ If this organization has prior JTBD analyses, this call is part of a **series**.
 
 ### 3. Load and Run JTBD Analysis
 
-1. **Read the master prompt** from: `Jobs To Be Done/Jobs 2B Done - Plugin & Skills/JTBD-Analysis-Prompt.md`
-2. **Apply the full prompt framework** to the transcript — all 9 analysis dimensions
-3. **Generate the complete analysis** following the OUTPUT FORMAT in that prompt file
+1. **Use the analysis framework** from this plugin's SKILL.md (Output Sections + Analysis Rules) — do NOT look for an external prompt file
+2. **Apply the full framework** to the transcript — all 9 analysis dimensions
+3. **Generate the complete analysis** following the Output Sections order defined in the SKILL.md
 4. **Analysis rules:**
    - Be specific, not generic ("get 12-person team to use CRM for case notes" NOT "improve technology adoption")
    - Quote liberally with exact language from the transcript
@@ -456,7 +457,7 @@ When adding new sections to the plugin in future versions:
 
 ## Important Notes
 
-- The `JTBD-Analysis-Prompt.md` in `Jobs 2B Done - Plugin & Skills/` is the single source of truth for methodology. Always read it fresh — it gets updated.
+- The SKILL.md in this plugin is the single source of truth for the analysis framework. Do NOT look for external prompt files.
 - Fuzzy match company folders aggressively. Only create new folders for clearly different organizations.
 - ~~CRM searches may return multiple results. Use the most likely match. If ambiguous, ask.
 - If the transcript source was ~~knowledge base, always include the page link in connections AND in the Meeting Transcript property.
