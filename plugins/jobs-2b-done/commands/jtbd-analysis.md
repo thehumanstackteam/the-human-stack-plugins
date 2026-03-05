@@ -11,106 +11,15 @@ Analyze a call transcript through Tim Lockie's Jobs-to-be-Done framework with UX
 
 **Related commands:** Use after sales calls (pairs with `sales:call-summary`), for product research synthesis (pairs with `product-management:synthesize-research`), and for productivity tracking (pairs with `productivity:update`).
 
-## Dispatch Architecture (Two-Phase)
+## Dispatch Architecture
 
-**This command uses a two-phase dispatch.** The background agent writes the .md file ONLY. The foreground dispatcher handles the Notion push deterministically — no LLM judgment on content.
+**This command uses the two-phase dispatch defined in SKILL.md.** Read the SKILL.md "Dispatch Architecture (Two-Phase)" section for the canonical agent prompt template, Phase 2 procedure, and background agent rules.
 
-**Why two phases:** Background agents consistently editorialize Notion page content (summarizing, truncating, posting stubs) despite explicit verbatim-copy instructions. The fix is architectural: the agent never touches Notion. The foreground reads the .md file back as raw text and pushes it verbatim.
-
-### Phase 1: Background Agent (Steps 2b → 5b — analysis + file save)
-
-1. **Read** this command file and the SKILL.md
-2. **Acquire the transcript** (Step 1 only — foreground, may need user input)
-3. **Extract company, participants, date** (Step 2 — foreground, deterministic)
-4. **Launch background agent** for Steps 2b through 5b ONLY
-
-```
-Agent(
-  subagent_type: "general-purpose",
-  description: "JTBD Analysis: {company} ({date})",
-  run_in_background: true,
-  prompt: "You are the autonomous JTBD analysis runner. Run the FULL analysis
-    pipeline without stopping. Never ask questions. Never wait for approval.
-
-    ## Input
-    Company: {company}
-    Participants: {participants}
-    Call Date: {date}
-    Save Path: /Users/tim/Dev/claude-cowork/Clients/{company}/Meetings/Analysis/
-    Transcript Source: {notion_url_or_'pasted'}
-    Fathom Recording: {fathom_url_or_'[Add link]'}
-
-    ## Transcript
-    {full_transcript_text}
-
-    ## Instructions
-    Follow the JTBD Analysis command Steps 2b through 5b ONLY:
-    - Create directory structure if needed (Meetings/Analysis/, Meetings/Transcripts/, Synthesis/)
-    - Step 2b: Query JTBD Analyses DB for series context
-    - Step 3: Run full 9-dimension JTBD analysis
-    - Step 4: Build CONNECTIONS section (run CRM lookups)
-    - Step 5: Save .md file to Meetings/Analysis/
-    - Step 5b: Run uxinator:expectation-mapper against the raw transcript, append output
-
-    YOUR JOB ENDS AT STEP 5b. Do NOT push to Notion. Do NOT create Notion pages.
-    Do NOT call notion-create-pages, notion-update-page, or any Notion write tool.
-    The foreground dispatcher handles Notion (Step 6) after you finish.
-
-    When complete, output EXACTLY this status block and nothing else after it:
-    ```
-    JTBD_COMPLETE
-    FILE_PATH: {full path to saved .md file}
-    ORGANIZATION: {company name}
-    CALL_DATE: {ISO date}
-    TRANSCRIPT_SOURCE: {notion_page_id or 'pasted'}
-    FATHOM_URL: {url or '[Add link]'}
-    ```
-
-    Do NOT stop on errors. Retry once, log, and continue.
-    Do NOT prompt the user about anything.
-
-    ## JTBD Analysis SKILL.md
-    {paste full SKILL.md content}
-
-    ## UXinator Expectation Mapper
-    Invoke the uxinator:expectation-mapper skill with the raw transcript.
-    Append the FULL output under ## EXPECTATION MAP at the end of the document.
-
-    ## JTBD Analysis Framework
-    Use the 9-dimension framework from the SKILL.md (Output Sections + Analysis Rules).
-    Do NOT look for an external JTBD-Analysis-Prompt.md file."
-)
-```
-
-**After dispatching Phase 1**, tell the user:
-- "JTBD analysis for {company} is running in the background."
-- "When it finishes, I'll push the full analysis to the JTBD Analyses Notion DB."
-
-### Phase 2: Foreground Notion Push (Step 6 — deterministic, no LLM judgment)
-
-**When the background agent completes**, the foreground dispatcher runs Step 6:
-
-1. **Parse the status block** from the agent output to get `FILE_PATH`, `ORGANIZATION`, `CALL_DATE`, `TRANSCRIPT_SOURCE`, `FATHOM_URL`
-2. **Read the .md file** from disk using the Read tool — this is raw file content, not an LLM summary
-3. **Extract properties** from the .md content using deterministic parsing (regex/string matching on section headers — see Step 6b for field mapping)
-4. **Call `notion-create-pages`** with:
-   - `parent: { data_source_id: "fbf274fd-5cf0-4afe-9eaf-cb511cae6b94" }`
-   - `content`: the ENTIRE .md file content from step 2 — passed through verbatim, no modifications
-   - `properties`: extracted in step 3
-5. **Verify** by fetching the created page and comparing byte-length to the .md file. If the Notion page is significantly shorter (~80% threshold), use the curl fallback (Step 6a) to append missing content.
-6. **Backfill Meeting Transcript Organization** — if `TRANSCRIPT_SOURCE` is a Notion page ID (not 'pasted'), fetch the source transcript page and check its `Organization` property. If empty, update it with `ORGANIZATION` from the status block using `notion-update-page`.
-
-**CRITICAL: The foreground dispatcher MUST NOT paraphrase, summarize, restructure, or editorialize the .md content. The content parameter is a direct passthrough of the file bytes.**
-
-**In batch mode**, Phase 2 runs as a loop after all agents complete:
-```
-for each completed agent:
-  1. read FILE_PATH from agent status block
-  2. file_content = Read(FILE_PATH)
-  3. properties = extract_properties(file_content)  # deterministic string parsing
-  4. notion-create-pages(content=file_content, properties=properties)
-  5. verify page content length vs .md file length
-```
+**Single-analysis flow:**
+1. Foreground: Acquire transcript (Step 1), extract company/participants/date (Step 2)
+2. Launch background agent using the Phase 1 template from SKILL.md
+3. Tell the user: "JTBD analysis for {company} is running in the background. When it finishes, I'll push the full analysis to the JTBD Analyses Notion DB."
+4. When agent completes, run Phase 2 from SKILL.md (Notion push + org backfill)
 
 ## Key References
 
@@ -189,7 +98,7 @@ If this organization has prior JTBD analyses, this call is part of a **series**.
 **Add a `Plugin Version` line** at the bottom of `## CONTEXT METADATA`:
 
 ```markdown
-**Plugin Version**: 6.0.1
+**Plugin Version**: 6.1.0
 ```
 
 **Add a `## SERIES` section** immediately after `## CONTEXT METADATA` in the analysis output:
@@ -329,7 +238,7 @@ Extract properties from the completed analysis. For select/multi-select fields, 
 | Known Pattern | From `### PATTERN RECOGNITION` -> Known Pattern |
 | Emerging Pattern | From `### PATTERN RECOGNITION` -> Emerging Pattern |
 | HubSpot Contacts | From CONNECTIONS -- formatted as "Name (link), Name (link)" |
-| Plugin Version | Always set to current plugin version (currently `6.0.1`) |
+| Plugin Version | Always set to current plugin version (currently `6.1.0`) |
 
 **Select properties (pick exactly ONE from the listed values):**
 

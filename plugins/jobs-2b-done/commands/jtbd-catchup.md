@@ -33,8 +33,8 @@ For each transcript returned in Step 2:
 1. Check the **"JTBD Analyses"** relation on the transcript page
 2. If the relation is **empty** → this transcript has NO analysis → mark as **"New"**
 3. If the relation has a value → fetch that JTBD Analyses page and check its `Plugin Version` property:
-   - No `Plugin Version` or version < `5.0.0` → mark as **"Outdated"**
-   - Version = `5.0.0` → mark as **"Current"** (skip)
+   - No `Plugin Version` or version < `6.1.0` → mark as **"Outdated"**
+   - Version >= `6.1.0` → mark as **"Current"** (skip)
 
 ## Step 4: Report Findings
 
@@ -57,45 +57,13 @@ If nothing needs work, report "All [total] transcripts from the past [N] days ha
 
 ## Step 5: Dispatch Background Agents
 
+**Use the two-phase dispatch from SKILL.md.** Read the SKILL.md "Dispatch Architecture (Two-Phase)" section for the canonical agent prompt template and Phase 2 procedure.
+
 ### For "New" transcripts (no analysis exists)
 
 1. Fetch the full transcript content using `notion-fetch` with the transcript's page URL
 2. Extract company name, participants, date from the transcript content and properties
-3. Launch a background agent with the full transcript:
-
-```
-Agent(
-  subagent_type: "general-purpose",
-  description: "JTBD Catchup: {company} ({date})",
-  run_in_background: true,
-  prompt: "You are the autonomous JTBD analysis runner. Run the FULL analysis
-    pipeline without stopping. Never ask questions. Never wait for approval.
-
-    ## Input
-    Company: {company}
-    Participants: {participants}
-    Call Date: {date}
-    Save Path: /Users/tim/Dev/claude-cowork/Clients/{company}/Meetings/Analysis/
-    Transcript Source: {notion_transcript_url}
-
-    ## Transcript
-    {full_transcript_text}
-
-    ## Instructions
-    Follow the JTBD Analysis command (jtbd-analysis.md) Steps 2b through 6:
-    - Create directory structure if needed
-    - Step 2b: Query JTBD Analyses DB for series context
-    - Step 3: Run full 9-dimension JTBD analysis
-    - Step 4: Build CONNECTIONS section (run CRM lookups)
-    - Step 5: Save .md file
-    - Step 5b: Run uxinator:expectation-mapper against the raw transcript, append output
-    - Step 6: Push to Notion JTBD Analyses DB (full text, use curl fallback if MCP truncates)
-    - Set Plugin Version to 5.0.0
-
-    Do NOT stop on errors. Retry once, log, and continue.
-    Do NOT prompt the user about anything."
-)
-```
+3. Launch a background agent using the **Phase 1 template from SKILL.md**, filling in `{company}`, `{participants}`, `{date}`, `{full_transcript_text}`, and `{notion_transcript_url}`
 
 ### For "Outdated" transcripts (analysis exists, older version)
 
@@ -106,10 +74,10 @@ Agent(
 ```
 Agent(
   subagent_type: "general-purpose",
-  description: "JTBD Upgrade: {company} ({date}) v{old} -> v5.0.0",
+  description: "JTBD Upgrade: {company} ({date}) v{old} -> v6.1.0",
   run_in_background: true,
   prompt: "You are the autonomous JTBD upgrade runner.
-    Upgrade this existing analysis to v5.0.0. Do NOT re-run the full analysis.
+    Upgrade this existing analysis to v6.1.0. Do NOT re-run the full analysis.
 
     ## Existing Analysis
     Notion page: {analysis_notion_url}
@@ -125,10 +93,13 @@ Agent(
     - Fetch the raw transcript from Notion
     - Add SERIES section after CONTEXT METADATA (query DB for session count)
     - Run uxinator:expectation-mapper against raw transcript, append as EXPECTATION MAP
-    - Add Plugin Version: 5.0.0 to CONTEXT METADATA
+    - Add Plugin Version: 6.1.0 to CONTEXT METADATA
     - Update the local .md file at the File Path property value
-    - Update the Notion page body with FULL text (use curl fallback if needed)
-    - Update the Plugin Version property on the Notion DB record
+
+    YOUR JOB ENDS after saving the file. Do NOT push to Notion.
+    Do NOT call notion-create-pages, notion-update-page, or any Notion write tool.
+
+    When complete, output the JTBD_COMPLETE status block (see SKILL.md).
 
     Do NOT modify existing analysis sections.
     Do NOT re-run the JTBD analysis. Only add missing sections."
@@ -137,12 +108,17 @@ Agent(
 
 **Launch all agents in a single message** for maximum parallelism.
 
+### Phase 2: After All Agents Complete
+
+Run the **Phase 2 batch loop from SKILL.md** for each completed agent — read .md from disk, push to Notion as deterministic passthrough, verify, backfill transcript Organization.
+
 ## Step 6: Summary
 
 After dispatching, tell the user:
 - How many analyses are running (new + upgrade)
 - Where files will be saved
 - Do NOT block waiting for results
+- Phase 2 (Notion push) will run after all agents finish
 
 ## Scheduling
 

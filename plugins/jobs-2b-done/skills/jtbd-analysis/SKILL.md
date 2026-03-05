@@ -56,7 +56,7 @@ Create the directory structure if it doesn't exist.
 
 ## Output Sections (in order)
 
-1. CONTEXT METADATA (includes `Plugin Version: 6.0.1` at bottom)
+1. CONTEXT METADATA (includes `Plugin Version: 6.1.0` at bottom)
 2. SERIES (session number, previous session link, JTBD evolution)
 3. PRIMARY JTBD
 4. DETAILED JTBD ANALYSIS
@@ -118,27 +118,101 @@ parent: { data_source_id: "fbf274fd-5cf0-4afe-9eaf-cb511cae6b94" }
 
 ## Dispatch Architecture (Two-Phase)
 
-**This skill uses a two-phase dispatch.** The background agent writes the .md file ONLY. The foreground dispatcher handles the Notion push deterministically.
+**All commands using this skill MUST use the two-phase dispatch below.** This is the single source of truth -- commands should reference this section, not duplicate it.
 
 **Why two phases:** Background agents consistently editorialize Notion page content (summarizing, truncating, posting stubs) despite explicit verbatim-copy instructions. The fix is architectural: the agent never touches Notion.
 
 ### Phase 1: Background Agent (Steps 2b → 5b)
-1. Foreground: Acquire transcript, extract company/participants/date
-2. Background agent: Series context, JTBD analysis, CRM lookups, UXinator expectation map, file save
-3. Agent outputs a status block with FILE_PATH, ORGANIZATION, CALL_DATE, TRANSCRIPT_SOURCE, FATHOM_URL
 
-### Phase 2: Foreground Notion Push (Step 6)
-1. Foreground reads the .md file from disk (Read tool — raw bytes, no LLM interpretation)
-2. Foreground calls `notion-create-pages` with file content as direct passthrough
-3. Foreground verifies page content length vs .md file length
+The foreground acquires the transcript and extracts company/participants/date. Then it launches a background agent:
 
-See `commands/jtbd-analysis.md` Dispatch Architecture section for the full agent prompt template and Phase 2 procedure.
+```
+Agent(
+  subagent_type: "general-purpose",
+  description: "JTBD Analysis: {company} ({date})",
+  run_in_background: true,
+  prompt: "You are the autonomous JTBD analysis runner. Run the FULL analysis
+    pipeline without stopping. Never ask questions. Never wait for approval.
 
-**Background agent rules:**
-- Agent scope is Steps 2b → 5b ONLY. Agent does NOT call any Notion write tools.
+    ## Input
+    Company: {company}
+    Participants: {participants}
+    Call Date: {date}
+    Save Path: /Users/tim/Dev/claude-cowork/Clients/{company}/Meetings/Analysis/
+    Transcript Source: {notion_url_or_'pasted'}
+    Fathom Recording: {fathom_url_or_'[Add link]'}
+
+    ## Transcript
+    {full_transcript_text}
+
+    ## Instructions
+    Follow the JTBD Analysis SKILL.md steps:
+    - Create directory structure if needed (Meetings/Analysis/, Meetings/Transcripts/, Synthesis/)
+    - Query JTBD Analyses DB for series context (session number, previous session)
+    - Run full 9-dimension JTBD analysis using the Output Sections and Analysis Rules from SKILL.md
+    - Build CONNECTIONS section (run CRM lookups)
+    - Save .md file to Meetings/Analysis/
+    - Run uxinator:expectation-mapper against the raw transcript, append output
+
+    YOUR JOB ENDS after saving the file. Do NOT push to Notion. Do NOT create Notion pages.
+    Do NOT call notion-create-pages, notion-update-page, or any Notion write tool.
+    The foreground dispatcher handles Notion after you finish.
+
+    When complete, output EXACTLY this status block and nothing else after it:
+    ```
+    JTBD_COMPLETE
+    FILE_PATH: {full path to saved .md file}
+    ORGANIZATION: {company name}
+    CALL_DATE: {ISO date}
+    TRANSCRIPT_SOURCE: {notion_page_id or 'pasted'}
+    FATHOM_URL: {url or '[Add link]'}
+    ```
+
+    Do NOT stop on errors. Retry once, log, and continue.
+    Do NOT prompt the user about anything.
+
+    ## JTBD Analysis SKILL.md
+    {paste full SKILL.md content}
+
+    ## UXinator Expectation Mapper
+    Invoke the uxinator:expectation-mapper skill with the raw transcript.
+    Append the FULL output under ## EXPECTATION MAP at the end of the document.
+
+    ## JTBD Analysis Framework
+    Use the 9-dimension framework from the SKILL.md (Output Sections + Analysis Rules).
+    Do NOT look for an external JTBD-Analysis-Prompt.md file."
+)
+```
+
+### Phase 2: Foreground Notion Push
+
+**When the background agent completes**, the foreground dispatcher:
+
+1. **Parse the status block** to get `FILE_PATH`, `ORGANIZATION`, `CALL_DATE`, `TRANSCRIPT_SOURCE`, `FATHOM_URL`
+2. **Read the .md file** from disk using the Read tool — raw file content, not an LLM summary
+3. **Extract properties** from the .md content using deterministic parsing (see `commands/jtbd-analysis.md` Step 6b)
+4. **Call `notion-create-pages`** with file content as direct passthrough — no paraphrasing, no summarizing
+5. **Verify** page content length vs .md file length. If significantly shorter (~80% threshold), use curl fallback (see `commands/jtbd-analysis.md` Step 6a)
+6. **Backfill Meeting Transcript Organization** — if `TRANSCRIPT_SOURCE` is a Notion page ID, check the transcript's `Organization` property and populate if empty
+
+**CRITICAL: The foreground dispatcher MUST NOT paraphrase, summarize, restructure, or editorialize the .md content.**
+
+**In batch mode** (e.g., jtbd-catchup), Phase 2 runs as a loop after all agents complete:
+```
+for each completed agent:
+  1. read FILE_PATH from agent status block
+  2. file_content = Read(FILE_PATH)
+  3. properties = extract_properties(file_content)
+  4. notion-create-pages(content=file_content, properties=properties)
+  5. verify page content length vs .md file length
+  6. backfill transcript Organization if empty
+```
+
+### Background Agent Rules
+- Agent scope ends at file save. Agent does NOT call any Notion write tools.
 - Do not stop for Bash tool errors — retry once, then log and continue.
 - Do not prompt about file permissions or directory creation.
-- Skip the user review step and save directly.
+- Skip user review and save directly.
 
 ## Backwards Compatibility & Batch Upgrade
 
