@@ -56,7 +56,7 @@ Create the directory structure if it doesn't exist.
 
 ## Output Sections (in order)
 
-1. CONTEXT METADATA (includes `Plugin Version: 6.0.0` at bottom)
+1. CONTEXT METADATA (includes `Plugin Version: 6.0.1` at bottom)
 2. SERIES (session number, previous session link, JTBD evolution)
 3. PRIMARY JTBD
 4. DETAILED JTBD ANALYSIS

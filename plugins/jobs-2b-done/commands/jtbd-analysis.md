@@ -189,7 +189,7 @@ If this organization has prior JTBD analyses, this call is part of a **series**.
 **Add a `Plugin Version` line** at the bottom of `## CONTEXT METADATA`:
 
 ```markdown
-**Plugin Version**: 6.0.0
+**Plugin Version**: 6.0.1
 ```
 
 **Add a `## SERIES` section** immediately after `## CONTEXT METADATA` in the analysis output:
@@ -329,7 +329,7 @@ Extract properties from the completed analysis. For select/multi-select fields, 
 | Known Pattern | From `### PATTERN RECOGNITION` -> Known Pattern |
 | Emerging Pattern | From `### PATTERN RECOGNITION` -> Emerging Pattern |
 | HubSpot Contacts | From CONNECTIONS -- formatted as "Name (link), Name (link)" |
-| Plugin Version | Always set to current plugin version (currently `6.0.0`) |
+| Plugin Version | Always set to current plugin version (currently `6.0.1`) |
 
 **Select properties (pick exactly ONE from the listed values):**
 
